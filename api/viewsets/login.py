@@ -3,20 +3,12 @@ from datetime import datetime
 
 from django.contrib.auth import authenticate, login
 from rest_framework import permissions, status
-from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
 
+from api.serializers import UserSerializer
+from ims_backend.utils.jwt_token import generate_token
 from ims_backend.utils.license import decrypt
-
-
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        "refresh": str(refresh),
-        "access": str(refresh.access_token),
-    }
 
 
 class LicenseRequiredMixin:
@@ -42,7 +34,7 @@ class LicenseRequiredMixin:
 class CustomLoginView(LicenseRequiredMixin, APIView):
     permission_classes = (permissions.AllowAny,)
 
-    def post(self, request: Request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         username = request.data.get("username")
         password = request.data.get("password")
         user = authenticate(username=username, password=password)
@@ -61,10 +53,12 @@ class CustomLoginView(LicenseRequiredMixin, APIView):
                 )
 
             login(request, user)
-            token = get_tokens_for_user(user)
+            token = generate_token(user)
+            user_profile_data = UserSerializer(user).data
+
             return Response(
                 {
-                    "id": user.id,
+                    "user_data": user_profile_data,
                     "token": token,
                 },
                 status=status.HTTP_200_OK,

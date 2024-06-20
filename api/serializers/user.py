@@ -1,23 +1,40 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from rest_framework import serializers
 
+from inspection_management.models import DataGroup
 from users.models import UserProfile
 
 User = get_user_model()
 
 
-class UserSerializer(serializers.ModelSerializer):
+class GroupSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ["id", "username", "email"]
+        model = Group
+        fields = ("id", "name")
+
+
+class DataGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DataGroup
+        fields = ("id", "name", "attachment_name", "attachment")
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    role = GroupSerializer()
+    data_group = DataGroupSerializer()
 
     class Meta:
         model = UserProfile
-        fields = ["id", "user", "role", "data_group", "profile_picture"]
+        fields = ("role", "data_group", "profile_picture")
+
+
+class UserSerializer(serializers.ModelSerializer):
+    user_profile = UserProfileSerializer(source="userprofile")
+
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "username", "email", "user_profile")
 
 
 class UserCreationSerializer(serializers.ModelSerializer):

@@ -1,11 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.utils.decorators import method_decorator
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from inspection_management.models import DataGroup
+from users.authorization import role_required
 from users.models import UserProfile
 
 from ..serializers import UserCreationSerializer, UserSerializer
@@ -13,16 +14,9 @@ from ..serializers import UserCreationSerializer, UserSerializer
 User = get_user_model()
 
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        "refresh": str(refresh),
-        "access": str(refresh.access_token),
-    }
-
-
+@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
 class SignUpView(APIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = permissions.IsAuthenticated
 
     def post(self, request, *args, **kwargs):
         serializer = UserCreationSerializer(data=request.data)
@@ -35,17 +29,17 @@ class SignUpView(APIView):
                 role_instance = Group.objects.filter(
                     name=request.data.get("role")
                 ).first()
+                profile_picture = request.data.get("profilePicture")
+                if not profile_picture:
+                    profile_picture = "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"
                 UserProfile.objects.create(
                     user=user,
                     data_group=data_group_instance,
                     role=role_instance,
-                    profile_picture=request.data.get(
-                        "profile_picture", "static/images/avatars/1.png"
-                    ),
+                    profile_picture=profile_picture,
                 )
-                token = get_tokens_for_user(user)
                 return Response(
-                    {"user": UserSerializer(user).data, "token": token},
+                    {"user": UserSerializer(user).data},
                     status=status.HTTP_201_CREATED,
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

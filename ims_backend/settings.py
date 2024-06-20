@@ -1,35 +1,20 @@
+from datetime import timedelta
 from pathlib import Path
+
+from decouple import Csv, config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-zy54qww00&2@-=s@o#77dqqv^$57hqt5ct0r-vc&09pyx*6w0o"
+SECRET_KEY = config("SECRET_KEY")
 
-DEBUG = True
+DEBUG = config("DEBUG", cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 
 
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "api",
-    "users",
-    "inspection_management",
-]
+INSTALLED_APPS = config("INSTALLED_APPS", cast=Csv())
 
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
+MIDDLEWARE = config("MIDDLEWARE", cast=Csv())
 
 ROOT_URLCONF = "ims_backend.urls"
 
@@ -51,11 +36,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "ims_backend.wsgi.application"
 
-
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": config("DB_ENGINE"),
+        "NAME": BASE_DIR / config("DB_NAME"),
     }
 }
 
@@ -75,17 +59,31 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LANGUAGE_CODE = config("LANGUAGE_CODE")
+TIME_ZONE = config("TIME_ZONE")
+USE_I18N = config("USE_I18N", cast=bool)
+USE_TZ = config("USE_TZ", cast=bool)
+DEFAULT_AUTO_FIELD = config("DEFAULT_AUTO_FIELD")
+AUTH_USER_MODEL = config("AUTH_USER_MODEL")
 
-LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv())
 
-USE_I18N = True
+STATIC_URL = config("STATIC_URL")
 
-USE_TZ = True
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (config("JWT_AUTHENTICATION_CLASS"),),
+}
 
-STATIC_URL = "static/"
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ALGORITHM": config("JWT_ALGORITHM"),
+    "SIGNING_KEY": config("JWT_SIGNING_KEY"),
+    "USER_ID_FIELD": config("JWT_USER_ID_FIELD"),
+    "USER_ID_CLAIM": config("JWT_USER_ID_CLAIM"),
+}
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-AUTH_USER_MODEL = "users.User"
+CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", cast=bool)
+CORS_ALLOW_METHODS = config("CORS_ALLOW_METHODS", cast=Csv())
+CORS_ALLOW_HEADERS = config("CORS_ALLOW_HEADERS", cast=Csv())
