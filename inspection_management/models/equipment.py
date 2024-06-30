@@ -8,7 +8,7 @@ from .datagroup import DataGroup
 
 
 class Equipment(models.Model):
-    name = models.CharField(max_length=25)
+    name = models.CharField(max_length=25, unique=True)
     description = models.CharField(max_length=255)
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)

@@ -11,7 +11,7 @@ class Planner(models.Model):
         ("Weekly", "Weekly"),
         ("Monthly", "Monthly"),
     ]
-    name = models.CharField(max_length=100, default="Planner")
+    name = models.CharField(max_length=100, default="Planner", unique=True)
     rule = models.CharField(max_length=10, choices=RULE_CHOICES, null=True, blank=True)
     evince_description = models.CharField(max_length=255, default="")
     evince_business_unit = models.ForeignKey(

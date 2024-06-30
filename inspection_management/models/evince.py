@@ -14,7 +14,7 @@ class Evince(models.Model):
         ("Rejected", "Rejected"),
         ("Reassigned", "Reassigned"),
     ]
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     description = models.CharField(max_length=255)
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
