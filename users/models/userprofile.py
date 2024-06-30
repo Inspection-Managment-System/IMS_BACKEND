@@ -8,11 +8,9 @@ from inspection_management.models import DataGroup
 class UserProfile(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
     role = models.ForeignKey(Group, on_delete=models.SET_NULL, blank=True, null=True)
-    data_group = models.ForeignKey(
+    data_groups = models.ManyToManyField(
         DataGroup,
-        on_delete=models.SET_NULL,
         blank=True,
-        null=True,
         related_name="user_profiles",
     )
     profile_picture = models.TextField(
