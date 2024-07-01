@@ -1,12 +1,15 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from api.viewsets import CompanyViewSet, DatagroupViewSet, UserViewSet
+from api.viewsets import (CompanyViewSet, DatagroupViewSet, SiteViewSet,
+                          UserViewSet)
 
 router = DefaultRouter()
-router.register(r"datagroups", DatagroupViewSet)
-router.register(r"users", UserViewSet)
-router.register(r"company", CompanyViewSet)
+router.register(r"datagroups", DatagroupViewSet, basename="datagroup")
+router.register(r"users", UserViewSet, basename="user")
+router.register(r"companies", CompanyViewSet, basename="company")
+router.register(r"sites", SiteViewSet, basename="site")
+
 
 urlpatterns = [
     path("", include(router.urls)),
