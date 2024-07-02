@@ -44,7 +44,5 @@ class SiteViewSet(viewsets.ModelViewSet):
             company = Company.objects.get(name=data.get("company"))
             data["group"] = company.group.id
             data["company"] = company.id
-            import pdb
 
-            pdb.set_trace()
         return data

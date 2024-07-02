@@ -1,7 +1,7 @@
 from django.db import models
 
 from inspection_management.models.equipment_type import EquipmentType
-# from inspection_management.models.location import Location
+from inspection_management.models.location import Location
 from users.models.user import User
 
 from .datagroup import DataGroup
@@ -13,7 +13,7 @@ class Equipment(models.Model):
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
     group = models.ForeignKey(DataGroup, on_delete=models.CASCADE)
-    # location = models.ForeignKey(Location, on_delete=models.CASCADE)
+    location = models.ForeignKey(Location, on_delete=models.CASCADE)
     callibration_date = models.DateTimeField()
     callibration_expiry = models.DateTimeField()
     operator = models.ForeignKey(
