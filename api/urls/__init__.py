@@ -7,6 +7,7 @@ from api.viewsets import (
     DatagroupViewSet,
     InspectionPointViewSet,
     LocationViewSet,
+    EquipmentTypeViewSet,
     SiteViewSet,
     UserViewSet,
 )
@@ -21,6 +22,7 @@ router.register(
     r"inspection_points", InspectionPointViewSet, basename="inspection_point"
 )
 router.register(r"locations", LocationViewSet, basename="location")
+router.register(r"equipment_types", EquipmentTypeViewSet, basename="equipment_type")
 
 urlpatterns = [
     path("", include(router.urls)),
