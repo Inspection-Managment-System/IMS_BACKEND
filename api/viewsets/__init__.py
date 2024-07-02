@@ -6,4 +6,5 @@ from .login import CustomLoginView
 from .signup import SignUpView
 from .site import SiteViewSet
 from .inspection_point import InspectionPointViewSet
+from .location import LocationViewSet
 from .user import UserViewSet
