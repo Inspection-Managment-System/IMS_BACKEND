@@ -5,4 +5,5 @@ from .datagroup import DatagroupViewSet
 from .login import CustomLoginView
 from .signup import SignUpView
 from .site import SiteViewSet
+from .inspection_point import InspectionPointViewSet
 from .user import UserViewSet

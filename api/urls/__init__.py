@@ -5,6 +5,7 @@ from api.viewsets import (
     BusinessUnitViewSet,
     CompanyViewSet,
     DatagroupViewSet,
+    InspectionPointViewSet,
     SiteViewSet,
     UserViewSet,
 )
@@ -15,6 +16,9 @@ router.register(r"users", UserViewSet, basename="user")
 router.register(r"companies", CompanyViewSet, basename="company")
 router.register(r"sites", SiteViewSet, basename="site")
 router.register(r"business_units", BusinessUnitViewSet, basename="business_unit")
+router.register(
+    r"inspection_points", InspectionPointViewSet, basename="inspection_point"
+)
 
 urlpatterns = [
     path("", include(router.urls)),
