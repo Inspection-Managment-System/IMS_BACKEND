@@ -9,3 +9,4 @@ from .inspection_point import InspectionPointViewSet
 from .location import LocationViewSet
 from .equipment_type import EquipmentTypeViewSet
 from .user import UserViewSet
+from .equipment import EquipmentViewSet
