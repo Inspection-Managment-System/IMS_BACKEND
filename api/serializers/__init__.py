@@ -8,3 +8,4 @@ from .location import *
 from .equipment_type import *
 from .user import *
 from .equipment import *
+from .datalist import *
