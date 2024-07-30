@@ -9,3 +9,4 @@ from .equipment_type import *
 from .user import *
 from .equipment import *
 from .datalist import *
+from .analysis_type import *
