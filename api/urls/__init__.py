@@ -13,6 +13,7 @@ from api.viewsets import (
     EquipmentViewSet,
     DataListViewSet,
     AnalysisTypeViewSet,
+    UnitViewSet
 )
 
 router = DefaultRouter()
@@ -29,6 +30,7 @@ router.register(r"equipment_types", EquipmentTypeViewSet, basename="equipment_ty
 router.register(r"equipments", EquipmentViewSet, basename="equipment")
 router.register(r"datalists", DataListViewSet, basename="datalists")
 router.register(r"analysis_types", AnalysisTypeViewSet, basename="analysis_types")
+router.register(r"units", UnitViewSet, basename="units")
 
 urlpatterns = [
     path("", include(router.urls)),

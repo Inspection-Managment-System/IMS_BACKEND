@@ -10,3 +10,4 @@ from .user import *
 from .equipment import *
 from .datalist import *
 from .analysis_type import *
+from .unit import UnitSerializer

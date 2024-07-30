@@ -12,3 +12,4 @@ from .user import UserViewSet
 from .equipment import EquipmentViewSet
 from .datalist import DataListViewSet
 from .analysis_type import AnalysisTypeViewSet
+from .unit import UnitViewSet
