@@ -12,7 +12,9 @@ class InspectionAnalysis(models.Model):
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
     group = models.ForeignKey(DataGroup, on_delete=models.CASCADE)
-    equipment = models.ForeignKey(Equipment, on_delete=models.CASCADE)
+    equipment = models.ForeignKey(
+        Equipment, on_delete=models.CASCADE, null=True, blank=True
+    )
     analysis_type = models.ForeignKey(AnalysisType, on_delete=models.CASCADE)
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     reported_name = models.CharField(max_length=50)

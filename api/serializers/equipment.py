@@ -12,7 +12,6 @@ class EquipmentSerializer(serializers.ModelSerializer):
     group = RFS(queryset=DataGroup.objects.all(), serializer=DGS)
     location = RFS(queryset=Location.objects.all(), serializer=LS)
     equipment_type = RFS(queryset=EquipmentType.objects.all(), serializer=ETS)
-    equipment_type = RFS(queryset=EquipmentType.objects.all(), serializer=ETS)
 
     class Meta:
         model = Equipment
