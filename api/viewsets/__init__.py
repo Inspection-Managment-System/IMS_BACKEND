@@ -14,3 +14,4 @@ from .datalist import DataListViewSet
 from .analysis_type import AnalysisTypeViewSet
 from .unit import UnitViewSet
 from .inspection_analysis import InspectionAnalysisViewSet
+from .parameter import ParameterViewSet

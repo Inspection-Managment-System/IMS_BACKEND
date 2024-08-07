@@ -12,3 +12,4 @@ from .datalist import *
 from .analysis_type import *
 from .unit import *
 from .inspection_analysis import *
+from .parameter import *
