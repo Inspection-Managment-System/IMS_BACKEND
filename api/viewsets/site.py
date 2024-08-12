@@ -3,6 +3,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import SiteSerializer
+from ims_backend.utils.helper import get_related_sites_from_company
 from inspection_management.models import Company, Site
 from users.authorization import role_required
 
@@ -12,6 +13,13 @@ class SiteViewSet(viewsets.ModelViewSet):
     queryset = Site.objects.all()
     serializer_class = SiteSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        company_name = request.query_params.get("company", None)
+        if company_name:
+            related_sites = get_related_sites_from_company(company_name)
+            self.queryset = related_sites
+        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

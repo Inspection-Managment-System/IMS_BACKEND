@@ -3,6 +3,8 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import InspectionAnalysisSerializer
+from ims_backend.utils.helper import \
+    get_related_inspection_analyses_from_analysis_type
 from inspection_management.models import (AnalysisType, DataGroup, Equipment,
                                           InspectionAnalysis, Location)
 from users.authorization import role_required
@@ -13,6 +15,15 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
     queryset = InspectionAnalysis.objects.all()
     serializer_class = InspectionAnalysisSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        analysis_type_name = request.query_params.get("analysis_type", None)
+        if analysis_type_name:
+            related_inspection_analyses = (
+                get_related_inspection_analyses_from_analysis_type(analysis_type_name)
+            )
+            self.queryset = related_inspection_analyses
+        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

@@ -3,6 +3,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import BusinessUnitSerializer
+from ims_backend.utils.helper import get_related_business_units_from_site
 from inspection_management.models import BusinessUnit, Site
 from users.authorization import role_required
 
@@ -12,6 +13,13 @@ class BusinessUnitViewSet(viewsets.ModelViewSet):
     queryset = BusinessUnit.objects.all()
     serializer_class = BusinessUnitSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        site_name = request.query_params.get("site", None)
+        if site_name:
+            related_business_units = get_related_business_units_from_site(site_name)
+            self.queryset = related_business_units
+        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

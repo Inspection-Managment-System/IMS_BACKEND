@@ -3,6 +3,8 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import InspectionPointSerializer
+from ims_backend.utils.helper import \
+    get_related_inspection_points_from_business_unit
 from inspection_management.models import BusinessUnit, InspectionPoint
 from users.authorization import role_required
 
@@ -12,6 +14,15 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
     queryset = InspectionPoint.objects.all()
     serializer_class = InspectionPointSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        business_unit_name = request.query_params.get("business_unit", None)
+        if business_unit_name:
+            related_inspection_points = (
+                get_related_inspection_points_from_business_unit(business_unit_name)
+            )
+            self.queryset = related_inspection_points
+        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
