@@ -14,7 +14,7 @@ class Evince(models.Model):
         ("Rejected", "Rejected"),
         ("Reassigned", "Reassigned"),
     ]
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100, unique=True, null=True, blank=True)
     description = models.CharField(max_length=255)
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -24,16 +24,21 @@ class Evince(models.Model):
     )
     inspection_point = models.ForeignKey(InspectionPoint, on_delete=models.CASCADE)
     assigned_to = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="assigned_inspector"
+        User,
+        on_delete=models.CASCADE,
+        related_name="assigned_inspector",
+        null=True,
+        blank=True,
     )
     reviewed_by = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="assigned_reviewer"
     )
     inspection_analyses = models.ManyToManyField(InspectionAnalysis)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Logged")
-    critical_instructions = models.FileField(
-        upload_to="evince_attachments/", blank=True, null=True
+    crtical_instructions_file_name = models.CharField(
+        max_length=255, blank=True, null=True
     )
+    crtical_instructions = models.TextField(blank=True, null=True)
     start_date_time = models.DateTimeField(blank=True, null=True)
     end_date_time = models.DateTimeField(blank=True, null=True)
     reassigned = models.BooleanField(default=False)
