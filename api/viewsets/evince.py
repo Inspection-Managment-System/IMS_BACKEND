@@ -23,6 +23,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        serializer.instance.save()
         self.create_inspection_tests_and_results(serializer.instance)
         headers = self.get_success_headers(serializer.data)
         return Response(
