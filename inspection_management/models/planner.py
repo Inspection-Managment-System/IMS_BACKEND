@@ -26,6 +26,13 @@ class Planner(models.Model):
 
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="assigned_planner_reviewer",
+        null=True,
+        blank=True,
+    )
     day_of_week = models.CharField(max_length=255, blank=True, null=True)
     start_date_time = models.DateTimeField()
     end_date_time = models.DateTimeField()

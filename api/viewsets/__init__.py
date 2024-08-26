@@ -16,3 +16,4 @@ from .unit import UnitViewSet
 from .inspection_analysis import InspectionAnalysisViewSet
 from .parameter import ParameterViewSet
 from .evince import EvinceViewSet
+from .planner import PlannerViewSet

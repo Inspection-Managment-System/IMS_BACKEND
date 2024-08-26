@@ -17,6 +17,7 @@ from api.viewsets import (
     InspectionAnalysisViewSet,
     ParameterViewSet,
     EvinceViewSet,
+    PlannerViewSet,
 )
 
 router = DefaultRouter()
@@ -39,6 +40,7 @@ router.register(
 )
 router.register(r"parameters", ParameterViewSet, basename="parameters")
 router.register(r"evinces", EvinceViewSet, basename="evinces")
+router.register(r"planners", PlannerViewSet, basename="planners")
 
 urlpatterns = [
     path("", include(router.urls)),
