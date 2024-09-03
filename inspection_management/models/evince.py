@@ -15,7 +15,7 @@ class Evince(models.Model):
         ("Reassigned", "Reassigned"),
     ]
     name = models.CharField(max_length=100, unique=True, null=True, blank=True)
-    description = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, null=True, blank=True)
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
     business_unit = models.ForeignKey(
