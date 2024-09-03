@@ -12,9 +12,6 @@ from users.models import User
 
 
 class EvinceSerializer(serializers.ModelSerializer):
-    business_unit = RelatedFieldSerializer(
-        queryset=BusinessUnit.objects.all(), serializer=BUS
-    )
     inspection_point = RelatedFieldSerializer(
         queryset=InspectionPoint.objects.all(), serializer=IPS
     )

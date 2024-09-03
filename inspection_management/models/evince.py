@@ -43,6 +43,14 @@ class Evince(models.Model):
     end_date_time = models.DateTimeField(blank=True, null=True)
     reassigned = models.BooleanField(default=False)
 
+    @classmethod
+    def get_status_labels(cls):
+        return dict(cls.STATUS_CHOICES)
+
+    @classmethod
+    def get_evinces_count_with_status(cls, status):
+        return cls.objects.filter(status=status).count()
+
     def __str__(self):
         return self.name
 

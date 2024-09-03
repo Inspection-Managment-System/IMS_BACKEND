@@ -1,4 +1,5 @@
 from inspection_management.models import *
+from users.models import *
 
 
 def get_related_sites_from_company(company_name):
@@ -25,3 +26,8 @@ def get_related_inspection_analyses_from_analysis_type(analysis_type_name):
         analysis_type=analysis_type_id
     )
     return inspection_analyses
+
+
+def get_user_groups(user_id):
+    user_object = User.objects.get(id=user_id)
+    return list(user_object.userprofile.data_groups.values_list("id", flat=True))

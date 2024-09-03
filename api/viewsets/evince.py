@@ -1,13 +1,17 @@
+from datetime import timedelta
+
+from django.db.models import Q
 from django.utils.decorators import method_decorator
+from django.utils.timezone import now
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import EvinceSerializer
+from ims_backend.utils.helper import get_user_groups
 from inspection_management.models import (BusinessUnit, Evince,
                                           InspectionAnalysis, InspectionPoint,
                                           InspectionResult, InspectionTest)
 from users.authorization import role_required
-from users.models import User
 
 
 @method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
@@ -15,6 +19,52 @@ class EvinceViewSet(viewsets.ModelViewSet):
     queryset = Evince.objects.all()
     serializer_class = EvinceSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        user_id = request.query_params.get("user_id", None)
+        business_unit = request.query_params.get("business_unit", None)
+        inspection_point = request.query_params.get("inspection_point", None)
+        analysis_type = request.query_params.get("analysis_type", None)
+        number_of_days = request.query_params.get("number_of_days", None)
+        status = request.query_params.get("status", None)
+        count = request.query_params.get("count", None)
+
+        filters = Q()
+
+        if user_id:
+            user_data_groups_ids = get_user_groups(user_id)
+            if user_data_groups_ids:
+                filters &= Q(inspection_point__group__id__in=user_data_groups_ids)
+        if business_unit:
+            filters &= Q(business_unit__name=business_unit)
+        if inspection_point:
+            filters &= Q(inspection_point__name=inspection_point)
+        if analysis_type:
+            filters &= Q(inspection_analyses__analysis_type__name=analysis_type)
+        if number_of_days:
+            target_date = now() - timedelta(days=int(number_of_days))
+            filters &= Q(start_date_time__gte=target_date)
+        if status:
+            filters &= Q(status=status)
+
+        filtered_queryset = (
+            self.queryset.filter(filters).distinct() if filters else self.queryset.all()
+        )
+
+        if count and count.lower() == "true":
+            response_data = []
+            status_labels = Evince.get_status_labels()
+
+            for key, value in status_labels.items():
+                evinces_count = filtered_queryset.filter(status=key).count()
+                response_data.append(
+                    {"value": value, "label": value, "count": evinces_count}
+                )
+
+            return Response(response_data)
+
+        self.queryset = filtered_queryset
+        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
