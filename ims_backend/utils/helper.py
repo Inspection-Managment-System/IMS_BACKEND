@@ -31,3 +31,8 @@ def get_related_inspection_analyses_from_analysis_type(analysis_type_name):
 def get_user_groups(user_id):
     user_object = User.objects.get(id=user_id)
     return list(user_object.userprofile.data_groups.values_list("id", flat=True))
+
+
+def get_user_through_role(role):
+    user_profiles = UserProfile.objects.filter(role__name=role)
+    return [userprofile.user for userprofile in user_profiles]

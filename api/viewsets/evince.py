@@ -48,7 +48,9 @@ class EvinceViewSet(viewsets.ModelViewSet):
             filters &= Q(status=status)
 
         filtered_queryset = (
-            self.queryset.filter(filters).distinct() if filters else self.queryset.all()
+            self.queryset.filter(filters).distinct().order_by("-changed_on")
+            if filters
+            else self.queryset.all().order_by("-changed_on")
         )
 
         if count and count.lower() == "true":

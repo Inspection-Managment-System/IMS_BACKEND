@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from api.serializers import UserSerializer
+from ims_backend.utils.helper import get_user_through_role
 from inspection_management.models import DataGroup
 from users.authorization import role_required
 from users.models import User
@@ -16,6 +17,13 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.filter(is_superuser=False)
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        user_type = request.query_params.get("user_type", None)
+        if user_type:
+            related_users = get_user_through_role(user_type)
+            self.queryset = related_users
+        return super().list(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
 
