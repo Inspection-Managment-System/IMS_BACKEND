@@ -28,6 +28,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
         number_of_days = request.query_params.get("number_of_days", None)
         status = request.query_params.get("status", None)
         count = request.query_params.get("count", None)
+        managed_by = request.query_params.get("managed_by", None)
 
         filters = Q()
 
@@ -46,11 +47,11 @@ class EvinceViewSet(viewsets.ModelViewSet):
             filters &= Q(start_date_time__gte=target_date)
         if status:
             filters &= Q(status=status)
+        if managed_by:
+            filters &= Q(reviewed_by__username=managed_by)
 
         filtered_queryset = (
-            self.queryset.filter(filters).distinct()
-            if filters
-            else self.queryset.all()
+            self.queryset.filter(filters).distinct() if filters else self.queryset.all()
         )
 
         if count and count.lower() == "true":
