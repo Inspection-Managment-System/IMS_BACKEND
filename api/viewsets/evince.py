@@ -14,7 +14,7 @@ from inspection_management.models import (BusinessUnit, Evince,
 from users.authorization import role_required
 
 
-@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
+@method_decorator(role_required(allowed_roles=["Admin", "Manager"]), name="dispatch")
 class EvinceViewSet(viewsets.ModelViewSet):
     queryset = Evince.objects.all()
     serializer_class = EvinceSerializer
