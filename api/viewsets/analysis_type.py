@@ -7,7 +7,7 @@ from inspection_management.models import AnalysisType, DataGroup
 from users.authorization import role_required
 
 
-@method_decorator(role_required(allowed_roles=["Admin", "Manager"]), name="dispatch")
+@method_decorator(role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch")
 class AnalysisTypeViewSet(viewsets.ModelViewSet):
     queryset = AnalysisType.objects.all()
     serializer_class = AnalysisTypeSerializer
