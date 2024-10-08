@@ -12,6 +12,7 @@ from inspection_management.models import (BusinessUnit, Evince,
                                           InspectionAnalysis, InspectionPoint,
                                           InspectionResult, InspectionTest)
 from users.authorization import role_required
+from users.models import User
 
 
 @method_decorator(role_required(allowed_roles=["Admin", "Manager"]), name="dispatch")
@@ -29,6 +30,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
         status = request.query_params.get("status", None)
         count = request.query_params.get("count", None)
         managed_by = request.query_params.get("managed_by", None)
+        inspected_by = request.query_params.get("inspected_by", None)
 
         filters = Q()
 
@@ -49,6 +51,17 @@ class EvinceViewSet(viewsets.ModelViewSet):
             filters &= Q(status=status)
         if managed_by:
             filters &= Q(reviewed_by__username=managed_by)
+        if inspected_by:
+            filters &= Q(assigned_to__username=inspected_by)
+
+        user = User.objects.get(id=user_id)
+        user_profile = user.userprofile
+        if user_profile.role.name == "Manager":
+
+            filters &= Q(reviewed_by=user)
+        elif user_profile.role.name == "Inspector":
+
+            filters &= Q(assigned_to=user)
 
         filtered_queryset = (
             self.queryset.filter(filters).distinct() if filters else self.queryset.all()
