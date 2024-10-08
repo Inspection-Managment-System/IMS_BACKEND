@@ -7,7 +7,7 @@ from inspection_management.models import Company, DataGroup
 from users.authorization import role_required
 
 
-@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
+@method_decorator(role_required(allowed_roles=["Admin", "Manager"]), name="dispatch")
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all()
     serializer_class = ComapnySerializer

@@ -8,7 +8,7 @@ from inspection_management.models import BusinessUnit, Site
 from users.authorization import role_required
 
 
-@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
+@method_decorator(role_required(allowed_roles=["Admin", "Manager"]), name="dispatch")
 class BusinessUnitViewSet(viewsets.ModelViewSet):
     queryset = BusinessUnit.objects.all()
     serializer_class = BusinessUnitSerializer
