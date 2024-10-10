@@ -9,7 +9,9 @@ from inspection_management.models import BusinessUnit, InspectionPoint
 from users.authorization import role_required
 
 
-@method_decorator(role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch")
+@method_decorator(
+    role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
+)
 class InspectionPointViewSet(viewsets.ModelViewSet):
     queryset = InspectionPoint.objects.all()
     serializer_class = InspectionPointSerializer

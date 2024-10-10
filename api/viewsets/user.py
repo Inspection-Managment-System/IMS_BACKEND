@@ -12,7 +12,9 @@ from users.authorization import role_required
 from users.models import User
 
 
-@method_decorator(role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch")
+@method_decorator(
+    role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
+)
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.filter(is_superuser=False)
     serializer_class = UserSerializer

@@ -15,7 +15,9 @@ from users.authorization import role_required
 from users.models import User
 
 
-@method_decorator(role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch")
+@method_decorator(
+    role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
+)
 class EvinceViewSet(viewsets.ModelViewSet):
     queryset = Evince.objects.all()
     serializer_class = EvinceSerializer
@@ -57,10 +59,8 @@ class EvinceViewSet(viewsets.ModelViewSet):
         user = User.objects.get(id=user_id)
         user_profile = user.userprofile
         if user_profile.role.name == "Manager":
-
             filters &= Q(reviewed_by=user)
         elif user_profile.role.name == "Inspector":
-
             filters &= Q(assigned_to=user)
 
         filtered_queryset = (
@@ -68,13 +68,36 @@ class EvinceViewSet(viewsets.ModelViewSet):
         )
 
         if count and count.lower() == "true":
-            response_data = []
-            status_labels = Evince.get_status_labels()
+            response_data = {"statuses": [], "dayscount": []}
 
+            status_labels = Evince.get_status_labels()
             for key, value in status_labels.items():
                 evinces_count = filtered_queryset.filter(status=key).count()
-                response_data.append(
+                response_data["statuses"].append(
                     {"value": value, "label": value, "count": evinces_count}
+                )
+            time_ranges = [
+                {"value": "last5days", "label": "Last 5 days", "days": 5},
+                {"value": "last10days", "label": "Last 10 days", "days": 10},
+                {"value": "last15days", "label": "Last 15 days", "days": 15},
+                {"value": "lastmonth", "label": "Last month", "days": 30},
+            ]
+
+            for time_range in time_ranges:
+                if time_range["days"]:
+                    time_threshold = now() - timedelta(days=time_range["days"])
+                    days_count = filtered_queryset.filter(
+                        start_date_time__gte=time_threshold
+                    ).count()
+                else:
+                    days_count = filtered_queryset.count()
+
+                response_data["dayscount"].append(
+                    {
+                        "value": time_range["value"],
+                        "label": time_range["label"],
+                        "count": days_count,
+                    }
                 )
 
             return Response(response_data)
