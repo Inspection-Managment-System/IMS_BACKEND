@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.timezone import now
 from rest_framework import permissions, status, viewsets
@@ -85,10 +86,13 @@ class EvinceViewSet(viewsets.ModelViewSet):
 
             for time_range in time_ranges:
                 if time_range["days"]:
-                    time_threshold = now() - timedelta(days=time_range["days"])
-                    days_count = filtered_queryset.filter(
+                    time_threshold = timezone.now() - timedelta(days=time_range["days"])
+                    days_count_queryset = filtered_queryset.filter(
                         start_date_time__gte=time_threshold
-                    ).count()
+                    )
+
+                    days_count = days_count_queryset.count()
+
                 else:
                     days_count = filtered_queryset.count()
 
