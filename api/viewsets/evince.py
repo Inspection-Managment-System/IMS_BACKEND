@@ -78,6 +78,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
                     {"value": value, "label": value, "count": evinces_count}
                 )
             time_ranges = [
+                {"value": "All time", "label": "All time", "days": None},
                 {"value": "last5days", "label": "Last 5 days", "days": 5},
                 {"value": "last10days", "label": "Last 10 days", "days": 10},
                 {"value": "last15days", "label": "Last 15 days", "days": 15},
