@@ -16,3 +16,5 @@ from .inspection_analysis import *
 from .parameter import *
 from .evince import *
 from .planner import *
+from .inspection_test import *
+from .inspection_result import *

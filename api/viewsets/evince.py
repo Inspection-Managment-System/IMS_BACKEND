@@ -5,9 +5,11 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.timezone import now
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from api.serializers import EvinceSerializer
+from api.serializers import (EvinceSerializer,
+                             SimplifiedInspectionResultSerializer)
 from ims_backend.utils.helper import get_user_groups
 from inspection_management.models import (BusinessUnit, Evince,
                                           InspectionAnalysis, InspectionPoint,
@@ -164,3 +166,12 @@ class EvinceViewSet(viewsets.ModelViewSet):
                     name=inspection_analysis_name
                 ).id
         return data
+
+    @action(detail=True, methods=["get"], url_path="results")
+    def get_results(self, request, pk=None):
+        """
+        Fetch the results related to a specific Evince.
+        """
+        inspection_results = InspectionResult.objects.filter(evince_id=pk)
+        serializer = SimplifiedInspectionResultSerializer(inspection_results, many=True)
+        return Response(serializer.data)
