@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.timezone import now
@@ -175,3 +176,57 @@ class EvinceViewSet(viewsets.ModelViewSet):
         inspection_results = InspectionResult.objects.filter(evince_id=pk)
         serializer = SimplifiedInspectionResultSerializer(inspection_results, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="status-update")
+    def update_status(self, request, pk=None):
+        """
+        API to update the status of the Evince based on the provided status and update InspectionResult data.
+        """
+        evince = get_object_or_404(Evince, pk=pk)
+        status_to_update = request.data.get("status")
+
+        if not status_to_update:
+            return Response(
+                {"error": "Status is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        evince.status = status_to_update
+
+        self.handle_status_update(evince, status_to_update)
+
+        evince.reassigned = True
+        evince.save()
+
+        return Response(
+            {"message": f"Evince status updated to {status_to_update}."},
+            status=status.HTTP_200_OK,
+        )
+
+    def handle_status_update(self, evince, status_to_update):
+        """
+        Handles the status update and relevant InspectionResult modifications.
+        """
+        if status_to_update == "ResultsEntered":
+            self.set_results_entered(evince)
+        elif status_to_update == "Rejected":
+            self.set_rejected(evince)
+        elif status_to_update == "Reassigned":
+            self.set_reassigned(evince)
+        elif status_to_update == "Approved":
+            self.set_approved(evince)
+
+    def set_results_entered(self, evince):
+        InspectionResult.objects.filter(evince=evince).update(status="Completed")
+
+    def set_rejected(self, evince):
+        pass
+
+    def set_reassigned(self, evince):
+        inspection_test_results = InspectionResult.objects.filter(evince=evince)
+        for result in inspection_test_results:
+            result.previous_value = result.entered_value
+            result.status = "Incomplete"
+            result.save()
+
+    def set_approved(self, evince):
+        pass
