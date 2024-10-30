@@ -18,3 +18,4 @@ from .parameter import ParameterViewSet
 from .evince import EvinceViewSet
 from .planner import PlannerViewSet
 from .inspection_result import InspectionResultViewSet
+from .admin_charts import AdminChartsView

@@ -49,4 +49,5 @@ router.register(
 urlpatterns = [
     path("", include(router.urls)),
     path("auth/", include("api.urls.user")),
+    path("admin_charts/", include("api.urls.admin_charts")),
 ]
