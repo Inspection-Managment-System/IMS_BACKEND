@@ -1,20 +1,17 @@
-from django.http import JsonResponse
-from django.views import View
 
 from api.services.detailed_entity_records import get_model_counts
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 
-class AdminChartsView(View):
-    def get(self, request, *args, **kwargs):
-        if "detailed_entity_records" in request.path:
-            return self.fetch_detailed_records(request, *args, **kwargs)
-        else:
-            return self.another_function(request, *args, **kwargs)
-
-    def fetch_detailed_records(self, request, *args, **kwargs):
+class AdminChartsViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=["get"], url_path="detailed_entity_records")
+    def fetch_detailed_records(self, request):
         data = get_model_counts()
-        return JsonResponse(data)
+        return Response(data)
 
-    def another_function(self, request, *args, **kwargs):
+    @action(detail=False, methods=["get"], url_path="another_function")
+    def another_function(self, request):
         data = {"message": "Another function called."}
-        return JsonResponse(data)
+        return Response(data)

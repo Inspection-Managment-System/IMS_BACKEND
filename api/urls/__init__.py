@@ -19,6 +19,7 @@ from api.viewsets import (
     EvinceViewSet,
     PlannerViewSet,
     InspectionResultViewSet,
+    AdminChartsViewSet,
 )
 
 router = DefaultRouter()
@@ -45,9 +46,9 @@ router.register(r"planners", PlannerViewSet, basename="planners")
 router.register(
     r"inspection_results", InspectionResultViewSet, basename="inspection_results"
 )
+router.register(r'admin_charts', AdminChartsViewSet, basename='admin_charts')
 
 urlpatterns = [
     path("", include(router.urls)),
     path("auth/", include("api.urls.user")),
-    path("admin_charts/", include("api.urls.admin_charts")),
 ]
