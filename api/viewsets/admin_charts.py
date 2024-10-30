@@ -1,8 +1,8 @@
-
-from api.services.detailed_entity_records import get_model_counts
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from api.services.detailed_entity_records import get_model_counts
 
 
 class AdminChartsViewSet(viewsets.ViewSet):
