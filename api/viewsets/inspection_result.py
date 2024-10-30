@@ -3,12 +3,13 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from api.serializers import SimplifiedInspectionResultSerializer
 from inspection_management.models import InspectionResult
 
 
 class InspectionResultViewSet(viewsets.ModelViewSet):
     queryset = InspectionResult.objects.all()
-    serializer_class = None
+    serializer_class = SimplifiedInspectionResultSerializer
 
     @action(detail=True, methods=["post"], url_path="update")
     def update_inspection(self, request, pk=None):
@@ -19,6 +20,8 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         inspection_result = get_object_or_404(InspectionResult, pk=pk)
         entered_value = request.data.get("entered_value", None)
         comments = request.data.get("comments", "")
+        attachment_name = request.data.get("attachment_name", "")
+        attachment = request.data.get("attachment", "")
 
         if not entered_value:
             return Response(
@@ -29,6 +32,11 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         inspection_result.entered_value = entered_value
         inspection_result.comments = comments
         inspection_result.status = "Completed"
+
+        if attachment and attachment_name:
+            inspection_result.attachment_name = attachment_name
+            inspection_result.attachment = attachment
+
         inspection_result.save()
 
         return Response(
