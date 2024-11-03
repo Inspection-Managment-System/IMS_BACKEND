@@ -46,7 +46,7 @@ router.register(r"planners", PlannerViewSet, basename="planners")
 router.register(
     r"inspection_results", InspectionResultViewSet, basename="inspection_results"
 )
-router.register(r'admin_charts', AdminChartsViewSet, basename='admin_charts')
+router.register(r"admin_charts", AdminChartsViewSet, basename="admin_charts")
 
 urlpatterns = [
     path("", include(router.urls)),
