@@ -30,6 +30,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         user_id = request.query_params.get("user_id", None)
         business_unit = request.query_params.get("business_unit", None)
+        site = request.query_params.get("site", None)
         inspection_point = request.query_params.get("inspection_point", None)
         analysis_type = request.query_params.get("analysis_type", None)
         number_of_days = request.query_params.get("number_of_days", None)
@@ -44,8 +45,12 @@ class EvinceViewSet(viewsets.ModelViewSet):
             user_data_groups_ids = get_user_groups(user_id)
             if user_data_groups_ids:
                 filters &= Q(inspection_point__group__id__in=user_data_groups_ids)
+        if site:
+            filters &= Q(business_unit__site__name=site)
+
         if business_unit:
             filters &= Q(business_unit__name=business_unit)
+
         if inspection_point:
             filters &= Q(inspection_point__name=inspection_point)
         if analysis_type:
@@ -82,10 +87,10 @@ class EvinceViewSet(viewsets.ModelViewSet):
                 )
             time_ranges = [
                 {"value": "All time", "label": "All time", "days": None},
-                {"value": "last5days", "label": "Last 5 days", "days": 5},
-                {"value": "last10days", "label": "Last 10 days", "days": 10},
-                {"value": "last15days", "label": "Last 15 days", "days": 15},
-                {"value": "lastmonth", "label": "Last month", "days": 30},
+                {"value": "5", "label": "Last 5 days", "days": 5},
+                {"value": "10", "label": "Last 10 days", "days": 10},
+                {"value": "15", "label": "Last 15 days", "days": 15},
+                {"value": "30", "label": "Last month", "days": 30},
             ]
 
             for time_range in time_ranges:
@@ -96,10 +101,10 @@ class EvinceViewSet(viewsets.ModelViewSet):
                     )
 
                     days_count = days_count_queryset.count()
-
+                    print(days_count)
                 else:
                     days_count = filtered_queryset.count()
-
+                    print(days_count)
                 response_data["dayscount"].append(
                     {
                         "value": time_range["value"],

@@ -18,7 +18,9 @@ class EvinceSerializer(serializers.ModelSerializer):
     inspection_analyses = ManyToManyRelatedFieldSerializer(
         queryset=InspectionAnalysis.objects.all(), serializer=IAS
     )
-    assigned_to = RelatedFieldSerializer(queryset=User.objects.all(), serializer=US)
+    assigned_to = RelatedFieldSerializer(
+        queryset=User.objects.all(), serializer=US, required=False
+    )
     reviewed_by = RelatedFieldSerializer(queryset=User.objects.all(), serializer=US)
 
     class Meta:
