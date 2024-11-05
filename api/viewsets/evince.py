@@ -94,17 +94,19 @@ class EvinceViewSet(viewsets.ModelViewSet):
             ]
 
             for time_range in time_ranges:
-                if time_range["days"]:
+                if time_range["days"] is not None:  # Check if days is specified
+                    # Apply date filter for specific days ranges (e.g., last 5, 10, etc.)
                     time_threshold = timezone.now() - timedelta(days=time_range["days"])
                     days_count_queryset = filtered_queryset.filter(
                         start_date_time__gte=time_threshold
                     )
-
                     days_count = days_count_queryset.count()
-                    print(days_count)
+                    print(f"Count for {time_range['label']} ({time_range['days']} days): {days_count}")
                 else:
+                    # "All time" selected, so fetch all records without a date filter
                     days_count = filtered_queryset.count()
-                    print(days_count)
+                    print(f"Count for All time: {days_count}")
+
                 response_data["dayscount"].append(
                     {
                         "value": time_range["value"],
