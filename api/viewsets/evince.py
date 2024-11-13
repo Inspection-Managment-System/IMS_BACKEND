@@ -56,8 +56,10 @@ class EvinceViewSet(viewsets.ModelViewSet):
         if analysis_type:
             filters &= Q(inspection_analyses__analysis_type__name=analysis_type)
         if number_of_days:
-            target_date = now() - timedelta(days=int(number_of_days))
-            filters &= Q(start_date_time__gte=target_date)
+            if number_of_days and number_of_days.isdigit():
+                days = int(number_of_days)
+                target_date = now() - timedelta(days=days)
+                filters &= Q(start_date_time__gte=target_date)
         if status:
             filters &= Q(status=status)
         if managed_by:
@@ -94,16 +96,16 @@ class EvinceViewSet(viewsets.ModelViewSet):
             ]
 
             for time_range in time_ranges:
-                if time_range["days"] is not None:  # Check if days is specified
-                    # Apply date filter for specific days ranges (e.g., last 5, 10, etc.)
+                if time_range["days"] is not None:
                     time_threshold = timezone.now() - timedelta(days=time_range["days"])
                     days_count_queryset = filtered_queryset.filter(
                         start_date_time__gte=time_threshold
                     )
                     days_count = days_count_queryset.count()
-                    print(f"Count for {time_range['label']} ({time_range['days']} days): {days_count}")
+                    print(
+                        f"Count for {time_range['label']} ({time_range['days']} days): {days_count}"
+                    )
                 else:
-                    # "All time" selected, so fetch all records without a date filter
                     days_count = filtered_queryset.count()
                     print(f"Count for All time: {days_count}")
 

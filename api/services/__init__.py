@@ -1,1 +1,1 @@
-from .detailed_entity_records import *
+from .admin_charts_api_functions import *

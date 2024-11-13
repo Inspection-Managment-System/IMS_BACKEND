@@ -8,7 +8,9 @@ from inspection_management.models import Company, Site
 from users.authorization import role_required
 
 
-@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
+@method_decorator(
+    role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
+)
 class SiteViewSet(viewsets.ModelViewSet):
     queryset = Site.objects.all()
     serializer_class = SiteSerializer
@@ -36,7 +38,6 @@ class SiteViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
         data = self.preprocess_data(data)
-
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=data, partial=partial)
