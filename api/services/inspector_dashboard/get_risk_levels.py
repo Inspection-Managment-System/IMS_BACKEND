@@ -3,16 +3,16 @@ from django.db.models import Count
 from inspection_management.models import Evince
 
 
-def get_risk_levels(inspector):
+def get_risk_levels(user):
     flammability_dist = (
-        Evince.objects.filter(assigned_to=inspector)
+        Evince.objects.filter(assigned_to=user)
         .values("inspection_point__flammability")
         .annotate(count=Count("id"))
         .values("inspection_point__flammability", "count")
     )
 
     health_risk_dist = (
-        Evince.objects.filter(assigned_to=inspector)
+        Evince.objects.filter(assigned_to=user)
         .values("inspection_point__health_risk")
         .annotate(count=Count("id"))
         .values("inspection_point__health_risk", "count")

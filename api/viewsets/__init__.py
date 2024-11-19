@@ -20,3 +20,4 @@ from .planner import PlannerViewSet
 from .inspection_result import InspectionResultViewSet
 from .admin_charts import AdminChartsViewSet
 from .inspector_dashboard import InspectorDashboardViewSet
+from .inspector_dashboard import InspectorDashboardViewSet

@@ -3,10 +3,10 @@ from django.utils import timezone
 from inspection_management.models import Evince
 
 
-def get_inspections_completed_today(inspector):
+def get_inspections_completed_today(user):
     today = timezone.now().date()
     completed_today = Evince.objects.filter(
-        assigned_to=inspector, status="Completed", end_date_time__date=today
+        assigned_to=user, status="Completed", end_date_time__date=today
     )
     return {
         "completed_today_evinces_count": completed_today.count(),

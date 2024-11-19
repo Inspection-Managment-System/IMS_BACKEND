@@ -3,3 +3,4 @@ __pycache__
 .env
 .DS_
 .DS_Store
+db.sqlite3

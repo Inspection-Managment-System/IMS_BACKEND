@@ -15,7 +15,7 @@ from inspection_management.models import Evince
 class AdminChartsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"], url_path="detailed_entity_records")
     def fetch_detailed_records(self, request):
-        data = get_model_counts()
+        data = get_model_counts(request.user)
         return Response(data)
 
     @action(detail=False, methods=["get"], url_path="another_function")

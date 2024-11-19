@@ -3,9 +3,9 @@ from django.db.models import Avg, DurationField, ExpressionWrapper, F
 from inspection_management.models import Evince
 
 
-def get_average_inspection_time(inspector):
+def get_average_inspection_time(user):
     approved_evinces = (
-        Evince.objects.filter(assigned_to=inspector, status="Approved")
+        Evince.objects.filter(assigned_to=user, status="Approved")
         .annotate(
             duration=ExpressionWrapper(
                 F("end_date_time") - F("start_date_time"), output_field=DurationField()
