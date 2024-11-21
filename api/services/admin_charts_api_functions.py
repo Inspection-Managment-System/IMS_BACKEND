@@ -1,6 +1,7 @@
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import models
 from django.db.models import Count, Q
 from django.utils import timezone
-from django.db import models
 
 from inspection_management.models import (AnalysisType, BusinessUnit, Company,
                                           DataGroup, Equipment, EquipmentType,
@@ -10,108 +11,33 @@ from inspection_management.models import (AnalysisType, BusinessUnit, Company,
 from users.models import User, UserProfile
 
 
-def get_model_counts(user):
-    # Retrieve all data groups associated with the user's profile
-    try:
-        user_profile = user.userprofile  # Adjust this if `userprofile` has a different name in your setup
-        data_groups = user_profile.data_groups.all()  # Fetch the data group objects
-        data_group_filters = [{'id': dg.id, 'name': dg.name} for dg in data_groups]
-    except AttributeError:
-        # If the user has no profile or data groups, return counts as zero
-        return {
-            "inspection_point_count": 0,
-            "inspection_analysis_count": 0,
-            "analysis_type_count": 0,
-            "evinces_count": 0,
-            "data_group_count": 0,
-            "equipment_count": 0,
-            "unit_count": 0,
-            "parameter_count": 0,
-        }
-
-    # If no data groups are assigned, return zero counts
-    if not data_group_filters:
-        return {
-            "inspection_point_count": 0,
-            "inspection_analysis_count": 0,
-            "analysis_type_count": 0,
-            "evinces_count": 0,
-            "data_group_count": 0,
-            "equipment_count": 0,
-            "unit_count": 0,
-            "parameter_count": 0,
-        }
-
-    # Perform counts with filters based on the user's DataGroups (using both ID and Name checks)
-    inspection_point_count = InspectionPoint.objects.filter(
-        models.Q(group__id__in=[dg['id'] for dg in data_group_filters]) &
-        models.Q(group__name__in=[dg['name'] for dg in data_group_filters])
-    ).count()
-
-    inspection_analysis_count = InspectionAnalysis.objects.filter(
-        models.Q(group__id__in=[dg['id'] for dg in data_group_filters]) &
-        models.Q(group__name__in=[dg['name'] for dg in data_group_filters])
-    ).count()
-
-    analysis_type_count = AnalysisType.objects.filter(
-        models.Q(group__id__in=[dg['id'] for dg in data_group_filters]) &
-        models.Q(group__name__in=[dg['name'] for dg in data_group_filters])
-    ).count()
-
-    evinces_count = Evince.objects.filter(
-        models.Q(business_unit__group__id__in=[dg['id'] for dg in data_group_filters]) &
-        models.Q(business_unit__group__name__in=[dg['name'] for dg in data_group_filters])
-    ).count()
-
-    data_group_count = DataGroup.objects.filter(
-        models.Q(id__in=[dg['id'] for dg in data_group_filters]) &
-        models.Q(name__in=[dg['name'] for dg in data_group_filters])
-    ).count()
-
-    equipment_count = Equipment.objects.filter(
-        models.Q(group__id__in=[dg['id'] for dg in data_group_filters]) &
-        models.Q(group__name__in=[dg['name'] for dg in data_group_filters])
-    ).count()
-
-    unit_count = Unit.objects.filter(
-        models.Q(group__id__in=[dg['id'] for dg in data_group_filters]) &
-        models.Q(group__name__in=[dg['name'] for dg in data_group_filters])
-    ).count()
-
-    parameter_count = Parameter.objects.filter(
-        models.Q(group__id__in=[dg['id'] for dg in data_group_filters]) &
-        models.Q(group__name__in=[dg['name'] for dg in data_group_filters])
-    ).count()
-
-    return {
-        "inspection_point_count": inspection_point_count,
-        "inspection_analysis_count": inspection_analysis_count,
-        "analysis_type_count": analysis_type_count,
-        "evinces_count": evinces_count,
-        "data_group_count": data_group_count,
-        "equipment_count": equipment_count,
-        "unit_count": unit_count,
-        "parameter_count": parameter_count,
-    }
-
-
 def statistic_cards_data():
     current_date = timezone.now()
-    current_month_start = current_date.replace(day=1)  
+    current_month_start = current_date.replace(day=1)
     total_users = User.objects.count()
     users_this_month = User.objects.filter(date_joined__gte=current_month_start).count()
     total_companies = Company.objects.count()
-    companies_this_month = Company.objects.filter(changed_on__gte=current_month_start).count()
+    companies_this_month = Company.objects.filter(
+        changed_on__gte=current_month_start
+    ).count()
     total_business_units = BusinessUnit.objects.count()
-    business_units_this_month = BusinessUnit.objects.filter(changed_on__gte=current_month_start).count()
-    
+    business_units_this_month = BusinessUnit.objects.filter(
+        changed_on__gte=current_month_start
+    ).count()
+
     total_sites = Site.objects.count()
     sites_this_month = Site.objects.filter(changed_on__gte=current_month_start).count()
 
     return {
         "total_users": {"count": total_users, "this_month": users_this_month},
-        "total_companies": {"count": total_companies, "this_month": companies_this_month},
-        "total_business_unit": {"count": total_business_units, "this_month": business_units_this_month},
+        "total_companies": {
+            "count": total_companies,
+            "this_month": companies_this_month,
+        },
+        "total_business_unit": {
+            "count": total_business_units,
+            "this_month": business_units_this_month,
+        },
         "totalsites": {"count": total_sites, "this_month": sites_this_month},
     }
 
@@ -133,7 +59,11 @@ def get_entity_breakdown_counts(user):
             if hasattr(BusinessUnit, "changed_by")
             else BusinessUnit.objects.count()
         ),
-        "data_groups": DataGroup.objects.count(),
+        "data_groups": (
+            DataGroup.objects.filter(user=user).count()
+            if hasattr(DataGroup, "user")
+            else DataGroup.objects.count()
+        ),
         "equipment_types": (
             EquipmentType.objects.filter(changed_by=user).count()
             if hasattr(EquipmentType, "changed_by")

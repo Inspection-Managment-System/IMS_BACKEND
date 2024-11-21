@@ -1,17 +1,14 @@
 from django.contrib.auth.models import Group
-from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
 from django.utils.dateparse import parse_date
-from rest_framework import status  
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
-from users.models import UserProfile
-from users.models import User
-
+from rest_framework.response import Response
 
 from api.services.inspector_dashboard import (get_assigned_evinces,
                                               get_average_inspection_time,
                                               get_evinces_distribution,
+                                              get_evinces_summary_with_details,
                                               get_inspection_status_breakdown,
                                               get_inspection_timeline,
                                               get_inspections_completed_today,
@@ -19,11 +16,8 @@ from api.services.inspector_dashboard import (get_assigned_evinces,
                                               get_pending_inspections,
                                               get_performance_trend,
                                               get_risk_levels,
-                                              get_top_overdue_business_units,
-                                              get_evinces_summary_with_details,
-                                              )
-
-
+                                              get_top_overdue_business_units)
+from users.models import User, UserProfile
 
 
 class InspectorDashboardViewSet(viewsets.ViewSet):
@@ -42,20 +36,11 @@ class InspectorDashboardViewSet(viewsets.ViewSet):
         data = get_assigned_evinces(user)
         return Response(data)
 
-
-
-
-
-
     @action(detail=False, methods=["get"], url_path="inspection_status_breakdown")
     def inspection_status_breakdown(self, request):
         user = request.query_params.get("user")
         data = get_inspection_status_breakdown(user)
         return Response(data)
-
-
-
-
 
     @action(detail=False, methods=["get"], url_path="completed_today")
     def completed_today(self, request):
@@ -63,32 +48,23 @@ class InspectorDashboardViewSet(viewsets.ViewSet):
         data = get_inspections_completed_today(user)
         return Response({"completed_today": data})
 
-
-
-
     @action(detail=False, methods=["get"], url_path="pending_inspections")
     def pending_inspections(self, request):
-    
+
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
         user = request.query_params.get("user")
         data = get_pending_inspections(user, start_date=start_date, end_date=end_date)
         return Response({"pending_inspections": data})
 
-
-
     @action(detail=False, methods=["get"], url_path="overdue_inspections")
     def overdue_inspections(self, request):
-        
+
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
         user = request.query_params.get("user")
         data = get_overdue_inspections(user, start_date=start_date, end_date=end_date)
         return Response({"overdue_inspections": data})
-
-
-
-
 
     @action(detail=False, methods=["get"], url_path="average_inspection_time")
     def average_inspection_time(self, request):
@@ -96,25 +72,17 @@ class InspectorDashboardViewSet(viewsets.ViewSet):
         data = get_average_inspection_time(user)
         return Response(data)
 
-
-
-
     @action(detail=False, methods=["get"], url_path="evinces_distribution")
     def evinces_distribution(self, request):
         user = request.query_params.get("user")
         data = get_evinces_distribution(user)
         return Response(data)
 
-
-
-
     @action(detail=False, methods=["get"], url_path="inspection_timeline")
     def inspection_timeline(self, request):
         user = request.query_params.get("user")
         data = get_inspection_timeline(user)
         return Response(data)
-
-
 
     @action(detail=False, methods=["get"], url_path="performance_trend")
     def performance_trend(self, request):
@@ -124,15 +92,11 @@ class InspectorDashboardViewSet(viewsets.ViewSet):
         data = get_performance_trend(user, start_date=start_date, end_date=end_date)
         return Response(data)
 
-
-
     @action(detail=False, methods=["get"], url_path="risk_levels")
     def risk_levels(self, request):
         user = request.query_params.get("user")
         data = get_risk_levels(user)
         return Response(data)
-    
-
 
     @action(detail=False, methods=["get"], url_path="top_overdue_business_units")
     def top_overdue_business_units(self, request):
@@ -141,8 +105,8 @@ class InspectorDashboardViewSet(viewsets.ViewSet):
         """
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
-        user_id = request.query_params.get("user")  
-        limit = int(request.query_params.get("limit", 5))  
+        user_id = request.query_params.get("user")
+        limit = int(request.query_params.get("limit", 5))
 
         try:
             user = User.objects.get(id=user_id)
@@ -157,10 +121,9 @@ class InspectorDashboardViewSet(viewsets.ViewSet):
         )
         return Response({"top_overdue_business_units": data})
 
-
-
-
-    @action(detail=False, methods=["get"], url_path="assigned_evinces_summary_with_details")
+    @action(
+        detail=False, methods=["get"], url_path="assigned_evinces_summary_with_details"
+    )
     def assigned_evinces_summary_with_details(self, request):
         user = request.query_params.get("user")
         if not user:

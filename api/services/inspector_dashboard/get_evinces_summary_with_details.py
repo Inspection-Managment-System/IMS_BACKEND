@@ -1,6 +1,7 @@
+from datetime import datetime, timedelta
+
 from django.db.models import Count, Q
 from django.utils.timezone import now
-from datetime import datetime, timedelta
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -20,9 +21,7 @@ def get_evinces_summary_with_details(user):
     )
     current_month_today = evinces.filter(start_date_time__date=today)
     current_month_upcoming = evinces.filter(start_date_time__gt=today)
-    current_month_overdue = evinces.filter(
-        end_date_time__lt=now(), status="Logged"
-    )
+    current_month_overdue = evinces.filter(end_date_time__lt=now(), status="Logged")
 
     previous_month_approved = evinces.filter(
         status="Approved",
@@ -108,8 +107,3 @@ def get_evinces_summary_with_details(user):
             ),
         },
     }
-
-
-
-
-

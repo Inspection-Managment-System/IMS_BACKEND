@@ -1,15 +1,14 @@
-from inspection_management.models import Evince
-from django.db.models import Q
-from django.utils.timezone import make_aware
 from datetime import datetime
 
-from datetime import datetime
 from django.db.models import Q
 from django.utils.timezone import make_aware
+
+from inspection_management.models import Evince
+
 
 def get_pending_inspections(User, start_date=None, end_date=None):
     pending_filter = Q(assigned_to=User, status="Logged")
-  
+
     if start_date:
         try:
             start_date = make_aware(datetime.strptime(start_date, "%Y-%m-%d"))
@@ -41,8 +40,12 @@ def get_pending_inspections(User, start_date=None, end_date=None):
 
     return {
         "pending_evinces_count": pending_evinces.count(),
-        "most_active_business_unit": max(business_unit_counts, key=business_unit_counts.get, default=None),
-        "earliest_due_date": earliest_due_date.isoformat() if earliest_due_date else None,
+        "most_active_business_unit": max(
+            business_unit_counts, key=business_unit_counts.get, default=None
+        ),
+        "earliest_due_date": (
+            earliest_due_date.isoformat() if earliest_due_date else None
+        ),
         "pending_evinces": list(
             pending_evinces.values(
                 "id",

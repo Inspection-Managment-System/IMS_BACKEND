@@ -1,8 +1,9 @@
 # services/inspector_dashboard/get_performance_trend.py
+from datetime import datetime
+
 from django.db.models import Count, Q
 from django.db.models.functions import TruncWeek
 from django.utils import timezone
-from datetime import datetime
 
 from inspection_management.models import Evince
 
@@ -29,7 +30,4 @@ def get_performance_trend(inspector, start_date=None, end_date=None):
         .order_by("week")
     )
 
-    return [
-        {"week": item["week"], "count": item["count"]}
-        for item in trend
-    ]
+    return [{"week": item["week"], "count": item["count"]} for item in trend]
