@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from api.services.manager_dashboard import (
     get_evince_status_overview_for_manager, get_inspectors_list,
-    get_manager_stats, get_top_inspectors_by_evinces)
+    get_manager_stats, get_top_inspectors_by_evinces,get_average_processing_time)
 from inspection_management.models import Evince
 from users.models import User, UserProfile
 
@@ -99,3 +99,15 @@ class ManagerChartsViewSet(viewsets.ViewSet):
                 {"error": stats_result["error"]}, status=stats_result["status"]
             )
         return Response(stats_result["data"], status=stats_result["status"])
+
+
+    @action(detail=False, methods=["get"], url_path="average_time")
+    def average_time(self, request):
+        manager_id = request.query_params.get("user")
+        if not manager_id:
+            return Response({"error": "Manager ID is required."}, status=400)
+
+        # Use the service function to get average time data
+        response = get_average_processing_time(manager_id)
+        status = response.pop("status", 200)
+        return Response(response, status=status)
