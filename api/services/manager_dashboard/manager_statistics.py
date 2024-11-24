@@ -1,17 +1,11 @@
 from datetime import timedelta
-
 from django.db.models import Count
 from django.utils.timezone import now
-from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
-
 from inspection_management.models import Evince
-from users.models import User, UserProfile
+from users.models import User
 
 
 def get_manager_stats(manager_id):
-
     try:
         manager = User.objects.get(id=manager_id)
         data_groups = manager.userprofile.data_groups.all()
@@ -22,12 +16,17 @@ def get_manager_stats(manager_id):
         data_group_ids = data_groups.values_list("id", flat=True)
         evinces = Evince.objects.filter(business_unit__group_id__in=data_group_ids)
 
+        # Calculate overall total evinces and last 7 days total evinces
         total_evinces = evinces.filter(reviewed_by_id=manager_id).count()
-
         last_7_days = now() - timedelta(days=7)
-        statuses = ["Approved", "Rejected", "Reassigned"]
+        total_evinces_last_7_days = evinces.filter(
+            reviewed_by_id=manager_id, changed_on__gte=last_7_days
+        ).count()
 
+        statuses = ["Approved", "Rejected", "Reassigned"]
         status_data = {}
+
+        # Calculate overall count and last 7 days count for each status
         for status in statuses:
             overall_count = evinces.filter(
                 reviewed_by_id=manager_id, status=status
@@ -41,7 +40,10 @@ def get_manager_stats(manager_id):
             }
 
         response_data = {
-            "total_evinces": total_evinces,
+            "total_evinces": {
+                "count": total_evinces,
+                "last_7_days": total_evinces_last_7_days,
+            },
             "approved_evinces": status_data["approved"],
             "rejected_evinces": status_data["rejected"],
             "reassigned_evinces": status_data["reassigned"],
