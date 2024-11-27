@@ -6,8 +6,16 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.services.manager_dashboard import (
-    get_evince_status_overview_for_manager, get_inspectors_list,
-    get_manager_stats, get_top_inspectors_by_evinces,get_average_processing_time)
+    get_evince_status_overview_for_manager,
+    get_inspectors_list,
+    get_manager_stats, 
+    get_top_inspectors_by_evinces,
+    get_average_processing_time,
+    get_manager_sunburst_data,
+    get_business_unit_data,
+    get_top_business_units
+    )
+
 from inspection_management.models import Evince
 from users.models import User, UserProfile
 
@@ -107,7 +115,44 @@ class ManagerChartsViewSet(viewsets.ViewSet):
         if not manager_id:
             return Response({"error": "Manager ID is required."}, status=400)
 
-        # Use the service function to get average time data
         response = get_average_processing_time(manager_id)
         status = response.pop("status", 200)
         return Response(response, status=status)
+    
+    @action(detail=False, methods=["get"], url_path="sunburst_data")
+    def sankey_data(self, request):
+        user_id = request.query_params.get("user")
+        if not user_id:
+            return Response({"error": "User ID is required."}, status=400)
+        data = get_manager_sunburst_data(user_id)
+        if "error" in data:
+            return Response(data, status=data.get("status", 500))
+        return Response(data, status=200)
+    
+
+    @action(detail=False, methods=["get"], url_path="business_unit_status")
+    def business_unit_status(self, request):
+        manager_id = request.query_params.get("user")
+        business_unit_id = request.query_params.get("business_unit")
+
+        if not manager_id:
+            return Response({"error": "Manager ID is required."}, status=400)
+
+        data = get_business_unit_data(manager_id, business_unit_id)
+        if "error" in data:
+            return Response(data, status=data.get("status", 500))
+
+        return Response(data, status=200)
+    
+
+
+    @action(detail=False, methods=["get"], url_path="top_business_units")
+    def top_business_units(self, request):
+        user_id = request.query_params.get("user")
+        if not user_id:
+            return Response({"error": "User ID is required."}, status=400)
+
+        result = get_top_business_units(user_id)
+        if "error" in result:
+            return Response(result, status=result.get("status", 500))
+        return Response(result["data"], status=200)
