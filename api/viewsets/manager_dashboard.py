@@ -6,16 +6,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.services.manager_dashboard import (
+    get_average_processing_time,
+    get_business_unit_data,
     get_evince_status_overview_for_manager,
     get_inspectors_list,
-    get_manager_stats, 
-    get_top_inspectors_by_evinces,
-    get_average_processing_time,
+    get_manager_stats,
     get_manager_sunburst_data,
-    get_business_unit_data,
-    get_top_business_units
-    )
-
+    get_top_business_units,
+    get_top_inspectors_by_evinces,
+)
 from inspection_management.models import Evince
 from users.models import User, UserProfile
 
@@ -108,7 +107,6 @@ class ManagerChartsViewSet(viewsets.ViewSet):
             )
         return Response(stats_result["data"], status=stats_result["status"])
 
-
     @action(detail=False, methods=["get"], url_path="average_time")
     def average_time(self, request):
         manager_id = request.query_params.get("user")
@@ -118,7 +116,7 @@ class ManagerChartsViewSet(viewsets.ViewSet):
         response = get_average_processing_time(manager_id)
         status = response.pop("status", 200)
         return Response(response, status=status)
-    
+
     @action(detail=False, methods=["get"], url_path="sunburst_data")
     def sankey_data(self, request):
         user_id = request.query_params.get("user")
@@ -128,7 +126,6 @@ class ManagerChartsViewSet(viewsets.ViewSet):
         if "error" in data:
             return Response(data, status=data.get("status", 500))
         return Response(data, status=200)
-    
 
     @action(detail=False, methods=["get"], url_path="business_unit_status")
     def business_unit_status(self, request):
@@ -143,8 +140,6 @@ class ManagerChartsViewSet(viewsets.ViewSet):
             return Response(data, status=data.get("status", 500))
 
         return Response(data, status=200)
-    
-
 
     @action(detail=False, methods=["get"], url_path="top_business_units")
     def top_business_units(self, request):

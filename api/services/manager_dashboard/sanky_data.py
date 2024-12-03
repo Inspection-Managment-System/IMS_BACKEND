@@ -1,8 +1,9 @@
 from django.db.models import Count
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from users.models import User
+
 from inspection_management.models import Evince
+from users.models import User
 
 
 def get_manager_sunburst_data(manager_id):
@@ -26,23 +27,22 @@ def get_manager_sunburst_data(manager_id):
         # Prepare data for the Sunburst chart
         data = []
         for group in data_groups:
-            group_data = {
-                "name": group.name,
-                "children": []
-            }
+            group_data = {"name": group.name, "children": []}
 
-            statuses = ["Approved", "Logged", "Rejected", "ResultsEntered", "Reassigned"]
+            statuses = [
+                "Approved",
+                "Logged",
+                "Rejected",
+                "ResultsEntered",
+                "Reassigned",
+            ]
             for status in statuses:
                 count = evinces.filter(
-                    business_unit__group_id=group.id,
-                    status=status
+                    business_unit__group_id=group.id, status=status
                 ).count()
 
                 if count > 0:  # Include only statuses with non-zero counts
-                    group_data["children"].append({
-                        "name": status,
-                        "value": count
-                    })
+                    group_data["children"].append({"name": status, "value": count})
 
             if group_data["children"]:  # Add only if the group has relevant data
                 data.append(group_data)

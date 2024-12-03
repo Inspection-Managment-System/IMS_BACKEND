@@ -3,11 +3,23 @@ from django.db import models
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from inspection_management.models import (AnalysisType, BusinessUnit, Company,
-                                          DataGroup, Equipment, EquipmentType,
-                                          Evince, Facility, InspectionAnalysis,
-                                          InspectionPoint, Location, Parameter,
-                                          Site, Suite, Unit)
+from inspection_management.models import (
+    AnalysisType,
+    BusinessUnit,
+    Company,
+    DataGroup,
+    Equipment,
+    EquipmentType,
+    Evince,
+    Facility,
+    InspectionAnalysis,
+    InspectionPoint,
+    Location,
+    Parameter,
+    Site,
+    Suite,
+    Unit,
+)
 from users.models import User, UserProfile
 
 

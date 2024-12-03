@@ -3,8 +3,13 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import ParameterSerializer
-from inspection_management.models import (AnalysisType, DataGroup,
-                                          InspectionAnalysis, Parameter, Unit)
+from inspection_management.models import (
+    AnalysisType,
+    DataGroup,
+    InspectionAnalysis,
+    Parameter,
+    Unit,
+)
 from users.authorization import role_required
 
 

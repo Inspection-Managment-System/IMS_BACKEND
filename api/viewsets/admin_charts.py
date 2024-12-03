@@ -7,9 +7,13 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.services.admin_dashboard import (
-    get_entity_breakdown_counts, get_evince_status_counts,
-    get_evince_status_overview, get_top_business_units_by_evince_count,
-    get_top_managers, statistic_cards_data)
+    get_entity_breakdown_counts,
+    get_evince_status_counts,
+    get_evince_status_overview,
+    get_top_business_units_by_evince_count,
+    get_top_managers,
+    statistic_cards_data,
+)
 from inspection_management.models import Evince
 from users.models import User, UserProfile
 

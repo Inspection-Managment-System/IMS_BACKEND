@@ -1,7 +1,11 @@
-from django.db.models import Avg, F
 from datetime import timedelta
-from users.models import User
+
+from django.db.models import Avg, F
+
 from inspection_management.models import Evince
+from users.models import User
+
+
 def get_average_processing_time(manager_id):
 
     try:
@@ -19,13 +23,15 @@ def get_average_processing_time(manager_id):
 
         # Calculate average processing time for each status
         avg_time = (
-            evinces
-            .annotate(processing_time=F("changed_on") - F("start_date_time"))
+            evinces.annotate(processing_time=F("changed_on") - F("start_date_time"))
             .values("status")
             .annotate(average_time=Avg("processing_time"))
         )
 
-        result = {entry["status"]: entry["average_time"].total_seconds() / 3600 for entry in avg_time}
+        result = {
+            entry["status"]: entry["average_time"].total_seconds() / 3600
+            for entry in avg_time
+        }
         return {"average_time": result, "status": 200}
 
     except User.DoesNotExist:

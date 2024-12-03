@@ -1,7 +1,10 @@
 from django.db import models
 
-from inspection_management.models import (BusinessUnit, InspectionAnalysis,
-                                          InspectionPoint)
+from inspection_management.models import (
+    BusinessUnit,
+    InspectionAnalysis,
+    InspectionPoint,
+)
 from users.models.user import User
 
 

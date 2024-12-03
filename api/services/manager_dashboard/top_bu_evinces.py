@@ -1,8 +1,9 @@
 from django.db.models import Count
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from inspection_management.models import BusinessUnit, Evince
 from users.models import User
-from inspection_management.models import Evince, BusinessUnit
 
 
 def get_top_business_units(manager_id):

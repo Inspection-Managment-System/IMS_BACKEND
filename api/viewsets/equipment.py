@@ -3,8 +3,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import EquipmentSerializer
-from inspection_management.models import (DataGroup, Equipment, EquipmentType,
-                                          Location)
+from inspection_management.models import DataGroup, Equipment, EquipmentType, Location
 from users.authorization import role_required
 
 

@@ -4,7 +4,7 @@ from inspection_management.models import Evince
 
 
 def get_inspection_status_breakdown(user):
-    all_statuses = ["Approved", "Rejected", "Logged", "ResultsEntered","Reassigned"]
+    all_statuses = ["Approved", "Rejected", "Logged", "ResultsEntered", "Reassigned"]
     status_counts = (
         Evince.objects.filter(assigned_to=user)
         .values("status")

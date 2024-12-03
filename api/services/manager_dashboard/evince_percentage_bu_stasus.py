@@ -1,8 +1,9 @@
 from django.db.models import Count
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from inspection_management.models import BusinessUnit, Evince
 from users.models import User
-from inspection_management.models import Evince, BusinessUnit
 
 
 def get_business_unit_data(manager_id, business_unit_id=None):
@@ -18,13 +19,12 @@ def get_business_unit_data(manager_id, business_unit_id=None):
             return {"error": "Manager has no associated data groups.", "status": 404}
 
         # Fetch business units associated with the manager's data groups
-        business_units = BusinessUnit.objects.filter(group_id__in=data_groups.values_list("id", flat=True))
+        business_units = BusinessUnit.objects.filter(
+            group_id__in=data_groups.values_list("id", flat=True)
+        )
 
         # Prepare dropdown data
-        business_unit_list = [
-            {"id": bu.id, "name": bu.name}
-            for bu in business_units
-        ]
+        business_unit_list = [{"id": bu.id, "name": bu.name} for bu in business_units]
 
         # If a specific business unit is selected, calculate evince status percentages
         if business_unit_id:
@@ -32,10 +32,14 @@ def get_business_unit_data(manager_id, business_unit_id=None):
 
             total_count = evinces.count()
             if total_count == 0:
-                evince_percentages = {status: 0 for status in Evince.get_status_labels().keys()}
+                evince_percentages = {
+                    status: 0 for status in Evince.get_status_labels().keys()
+                }
             else:
                 evince_percentages = {
-                    status: round((evinces.filter(status=status).count() / total_count) * 100, 2)
+                    status: round(
+                        (evinces.filter(status=status).count() / total_count) * 100, 2
+                    )
                     for status in Evince.get_status_labels().keys()
                 }
 

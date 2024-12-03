@@ -22,6 +22,7 @@ from api.viewsets import (
     AdminChartsViewSet,
     InspectorDashboardViewSet,
     ManagerChartsViewSet,
+    IMSReportViewSet,
 )
 
 router = DefaultRouter()
@@ -56,6 +57,9 @@ router.register(
 router.register(
     r"manager_dashboard", ManagerChartsViewSet, basename="manager_dashboard"
 )
+
+router.register(r"reports", IMSReportViewSet, basename="reports")
+
 
 urlpatterns = [
     path("", include(router.urls)),

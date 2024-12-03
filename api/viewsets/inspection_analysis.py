@@ -3,10 +3,14 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import InspectionAnalysisSerializer
-from ims_backend.utils.helper import \
-    get_related_inspection_analyses_from_analysis_type
-from inspection_management.models import (AnalysisType, DataGroup, Equipment,
-                                          InspectionAnalysis, Location)
+from ims_backend.utils.helper import get_related_inspection_analyses_from_analysis_type
+from inspection_management.models import (
+    AnalysisType,
+    DataGroup,
+    Equipment,
+    InspectionAnalysis,
+    Location,
+)
 from users.authorization import role_required
 
 

@@ -9,12 +9,16 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from api.serializers import (EvinceSerializer,
-                             SimplifiedInspectionResultSerializer)
+from api.serializers import EvinceSerializer, SimplifiedInspectionResultSerializer
 from ims_backend.utils.helper import get_user_groups
-from inspection_management.models import (BusinessUnit, Evince,
-                                          InspectionAnalysis, InspectionPoint,
-                                          InspectionResult, InspectionTest)
+from inspection_management.models import (
+    BusinessUnit,
+    Evince,
+    InspectionAnalysis,
+    InspectionPoint,
+    InspectionResult,
+    InspectionTest,
+)
 from users.authorization import role_required
 from users.models import User
 

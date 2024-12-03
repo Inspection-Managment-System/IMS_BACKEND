@@ -4,8 +4,7 @@ from api.serializers import DataGroupSerializer as DGS
 from api.serializers import EquipmentTypeSerializer as ETS
 from api.serializers import LocationSerializer as LS
 from api.serializers import RelatedFieldSerializer as RFS
-from inspection_management.models import (DataGroup, Equipment, EquipmentType,
-                                          Location)
+from inspection_management.models import DataGroup, Equipment, EquipmentType, Location
 
 
 class EquipmentSerializer(serializers.ModelSerializer):

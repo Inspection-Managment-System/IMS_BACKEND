@@ -1,6 +1,8 @@
 from datetime import timedelta
+
 from django.db.models import Count
 from django.utils.timezone import now
+
 from inspection_management.models import Evince
 from users.models import User
 

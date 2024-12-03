@@ -5,18 +5,20 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from api.services.inspector_dashboard import (get_assigned_evinces,
-                                              get_average_inspection_time,
-                                              get_evinces_distribution,
-                                              get_evinces_summary_with_details,
-                                              get_inspection_status_breakdown,
-                                              get_inspection_timeline,
-                                              get_inspections_completed_today,
-                                              get_overdue_inspections,
-                                              get_pending_inspections,
-                                              get_performance_trend,
-                                              get_risk_levels,
-                                              get_top_overdue_business_units)
+from api.services.inspector_dashboard import (
+    get_assigned_evinces,
+    get_average_inspection_time,
+    get_evinces_distribution,
+    get_evinces_summary_with_details,
+    get_inspection_status_breakdown,
+    get_inspection_timeline,
+    get_inspections_completed_today,
+    get_overdue_inspections,
+    get_pending_inspections,
+    get_performance_trend,
+    get_risk_levels,
+    get_top_overdue_business_units,
+)
 from users.models import User, UserProfile
 
 

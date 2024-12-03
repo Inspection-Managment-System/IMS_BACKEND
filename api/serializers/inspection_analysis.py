@@ -5,8 +5,13 @@ from api.serializers import EquipmentSerializer as ES
 from api.serializers import GroupSerializer as GS
 from api.serializers import LocationSerializer as LS
 from api.serializers import RelatedFieldSerializer
-from inspection_management.models import (AnalysisType, DataGroup, Equipment,
-                                          InspectionAnalysis, Location)
+from inspection_management.models import (
+    AnalysisType,
+    DataGroup,
+    Equipment,
+    InspectionAnalysis,
+    Location,
+)
 
 
 class InspectionAnalysisSerializer(serializers.ModelSerializer):
