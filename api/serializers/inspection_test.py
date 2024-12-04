@@ -3,7 +3,8 @@ from rest_framework import serializers
 from api.serializers import EvinceSerializer as ES
 from api.serializers import InspectionAnalysisSerializer as IAS
 from api.serializers import RelatedFieldSerializer
-from inspection_management.models import Evince, InspectionAnalysis, InspectionTest
+from inspection_management.models import (Evince, InspectionAnalysis,
+                                          InspectionTest)
 
 
 class InspectionTestSerializer(serializers.ModelSerializer):

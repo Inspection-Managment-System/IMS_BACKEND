@@ -1,19 +1,8 @@
-from inspection_management.models import (
-    AnalysisType,
-    BusinessUnit,
-    Company,
-    DataGroup,
-    Equipment,
-    EquipmentType,
-    Evince,
-    Facility,
-    InspectionAnalysis,
-    InspectionPoint,
-    Location,
-    Site,
-    Suite,
-    Unit,
-)
+from inspection_management.models import (AnalysisType, BusinessUnit, Company,
+                                          DataGroup, Equipment, EquipmentType,
+                                          Evince, Facility, InspectionAnalysis,
+                                          InspectionPoint, Location, Site,
+                                          Suite, Unit)
 
 
 def get_entity_breakdown_counts(user):

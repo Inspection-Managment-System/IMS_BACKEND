@@ -4,15 +4,14 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.services.reports import (
-    fetch_analysis_type_report,
-    fetch_generic_facility_functionality_report,
-    fetch_inspection_data,
-    fetch_inspection_result_trend_report,
-    fetch_summary_report,
-    get_inspectors_list,
-    single_inspector_performance,
-)
+from api.services.reports import (fetch_analysis_type_report,
+                                  fetch_business_units_and_evinces,
+                                  fetch_certificate_of_inspection,
+                                  fetch_generic_facility_functionality_report,
+                                  fetch_inspection_data,
+                                  fetch_inspection_result_trend_report,
+                                  fetch_summary_report, get_inspectors_list,
+                                  single_inspector_performance)
 from users.models import User, UserProfile
 
 
@@ -127,5 +126,38 @@ class IMSReportViewSet(viewsets.ViewSet):
             return Response(report_data)
         except ValueError as ve:
             raise ValidationError({"error": str(ve)})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+    @action(detail=False, methods=["get"], url_path="business_units_and_evinces")
+    def get_business_units_and_evinces(self, request):
+        user = request.user
+        business_unit_id = request.query_params.get("business_unit_id")
+
+        try:
+            data = fetch_business_units_and_evinces(user, business_unit_id)
+            return Response(data)
+        except ValueError as e:
+            raise ValidationError({"error": str(e)})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+    @action(detail=False, methods=["get"], url_path="certificate_of_inspection")
+    def get_certificate_of_inspection(self, request):
+        """
+        Fetch the certificate of inspection for a specific evince.
+        """
+        evince_id = request.query_params.get("evince_id")
+        start_date = request.query_params.get("start_date")
+        end_date = request.query_params.get("end_date")
+
+        if not evince_id:
+            raise ValidationError({"error": "Evince ID is required."})
+
+        try:
+            data = fetch_certificate_of_inspection(evince_id, start_date, end_date)
+            return Response(data)
+        except ValueError as e:
+            raise ValidationError({"error": str(e)})
         except Exception as e:
             return Response({"error": str(e)}, status=500)

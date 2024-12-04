@@ -3,12 +3,8 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import PlannerSerializer
-from inspection_management.models import (
-    BusinessUnit,
-    InspectionAnalysis,
-    InspectionPoint,
-    Planner,
-)
+from inspection_management.models import (BusinessUnit, InspectionAnalysis,
+                                          InspectionPoint, Planner)
 from users.authorization import role_required
 
 

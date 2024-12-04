@@ -3,7 +3,8 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from api.serializers import InspectionPointSerializer
-from ims_backend.utils.helper import get_related_inspection_points_from_business_unit
+from ims_backend.utils.helper import \
+    get_related_inspection_points_from_business_unit
 from inspection_management.models import BusinessUnit, InspectionPoint
 from users.authorization import role_required
 

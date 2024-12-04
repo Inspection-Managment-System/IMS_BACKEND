@@ -3,14 +3,11 @@ from rest_framework import serializers
 from api.serializers import BusinessUnitSerializer as BUS
 from api.serializers import InspectionAnalysisSerializer as IAS
 from api.serializers import InspectionPointSerializer as IPS
-from api.serializers import ManyToManyRelatedFieldSerializer, RelatedFieldSerializer
+from api.serializers import (ManyToManyRelatedFieldSerializer,
+                             RelatedFieldSerializer)
 from api.serializers import UserSerializer as US
-from inspection_management.models import (
-    BusinessUnit,
-    Evince,
-    InspectionAnalysis,
-    InspectionPoint,
-)
+from inspection_management.models import (BusinessUnit, Evince,
+                                          InspectionAnalysis, InspectionPoint)
 from users.models import User
 
 

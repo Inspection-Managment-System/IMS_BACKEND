@@ -1,20 +1,10 @@
 from django.db.models import Count
 
-from inspection_management.models import (
-    AnalysisType,
-    BusinessUnit,
-    Company,
-    DataGroup,
-    Equipment,
-    Evince,
-    Facility,
-    InspectionAnalysis,
-    InspectionPoint,
-    Parameter,
-    Site,
-    Suite,
-    Unit,
-)
+from inspection_management.models import (AnalysisType, BusinessUnit, Company,
+                                          DataGroup, Equipment, Evince,
+                                          Facility, InspectionAnalysis,
+                                          InspectionPoint, Parameter, Site,
+                                          Suite, Unit)
 
 
 def fetch_summary_report():

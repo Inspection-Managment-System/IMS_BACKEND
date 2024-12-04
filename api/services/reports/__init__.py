@@ -5,3 +5,5 @@ from .summary_report import *
 from .inspectors_list import *
 from .analysis_type_report import *
 from .inspection_result_report import *
+from .fetch_business_units_evinces import *
+from .fetch_certificate_of_inspection import *

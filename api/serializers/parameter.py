@@ -4,7 +4,8 @@ from api.serializers import GroupSerializer as GS
 from api.serializers import InspectionAnalysisSerializer as IAS
 from api.serializers import RelatedFieldSerializer
 from api.serializers import UnitSerializer as US
-from inspection_management.models import DataGroup, InspectionAnalysis, Parameter, Unit
+from inspection_management.models import (DataGroup, InspectionAnalysis,
+                                          Parameter, Unit)
 
 
 class ParameterSerializer(serializers.ModelSerializer):
