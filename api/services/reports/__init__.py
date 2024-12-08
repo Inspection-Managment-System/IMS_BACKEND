@@ -8,3 +8,4 @@ from .inspection_result_report import *
 from .fetch_business_units_evinces import *
 from .fetch_certificate_of_inspection import *
 from .overdue_evinces import *
+from .equipment_report import *
