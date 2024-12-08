@@ -11,7 +11,9 @@ from api.services.reports import (fetch_analysis_type_report,
                                   fetch_inspection_data,
                                   fetch_inspection_result_trend_report,
                                   fetch_summary_report, get_inspectors_list,
-                                  single_inspector_performance)
+                                  single_inspector_performance,
+                                  fetch_evince_details,
+                                  fetch_overdue_evinces)
 from users.models import User, UserProfile
 
 
@@ -21,11 +23,8 @@ class IMSReportViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="summary")
     def summary_report(self, request):
-        """
-        Fetch a detailed summary report.
-        """
+
         try:
-            # Fetch summary report data
             summary_data = fetch_summary_report()
             return Response(summary_data)
         except Exception as e:
@@ -39,7 +38,6 @@ class IMSReportViewSet(viewsets.ViewSet):
         business_unit_id = request.query_params.get("business_unit")
 
         try:
-            # Fetch data using the service function
             business_unit_data = fetch_inspection_data(
                 start_date, end_date, business_unit_id
             )
@@ -53,7 +51,6 @@ class IMSReportViewSet(viewsets.ViewSet):
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
 
-        # Fetch the report data using the service function
         report_data = fetch_generic_facility_functionality_report(start_date, end_date)
 
         return Response({"facility_summary": report_data})
@@ -73,9 +70,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="inspector_performance")
     def inspector_performance_report(self, request):
-        """
-        Fetch performance metrics for a specific inspector.
-        """
+
         user = request.query_params.get("user")
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
@@ -93,9 +88,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="analysis_type_report")
     def analysis_type_report(self, request):
-        """
-        Fetch a report summarizing the types of analyses performed and their outcomes.
-        """
+
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
 
@@ -109,15 +102,12 @@ class IMSReportViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="inspection_result_trend")
     def inspection_result_trend(self, request):
-        """
-        API endpoint for fetching trends in inspection results.
-        """
+
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
         anomaly_threshold = request.query_params.get("anomaly_threshold", 20)
 
         try:
-            # Fetch trend report data
             report_data = fetch_inspection_result_trend_report(
                 start_date=start_date,
                 end_date=end_date,
@@ -144,9 +134,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="certificate_of_inspection")
     def get_certificate_of_inspection(self, request):
-        """
-        Fetch the certificate of inspection for a specific evince.
-        """
+
         evince_id = request.query_params.get("evince_id")
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
@@ -161,3 +149,23 @@ class IMSReportViewSet(viewsets.ViewSet):
             raise ValidationError({"error": str(e)})
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+    @action(detail=False, methods=["get"], url_path="overdue_evince_data")
+    def evince_data(self, request):
+
+        evince_id = request.query_params.get("evince_id")
+        inspector_id = request.query_params.get("inspector_id")
+        business_unit_id = request.query_params.get("business_unit_id")
+
+        if evince_id:
+            try:
+                data = fetch_evince_details(evince_id)
+                return Response({"evince_details": data})
+            except Exception as e:
+                return Response({"error": str(e)}, status=500)
+
+        try:
+            data = fetch_overdue_evinces(inspector_id, business_unit_id)
+            return Response({"overdue_evinces": data})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)  
