@@ -1,15 +1,13 @@
 from django.utils.timezone import now
+
 from inspection_management.models import Evince
 
 
-
-
-
 def fetch_overdue_evinces(inspector_id=None, business_unit_id=None):
- 
+
     filters = {
         "status": "Logged",
-        "end_date_time__lt": now(),  
+        "end_date_time__lt": now(),
     }
 
     if inspector_id:
@@ -22,7 +20,7 @@ def fetch_overdue_evinces(inspector_id=None, business_unit_id=None):
     )
 
     if not overdue_evinces.exists():
-        print("No overdue evinces found.")  
+        print("No overdue evinces found.")
 
     return [
         {
@@ -36,7 +34,6 @@ def fetch_overdue_evinces(inspector_id=None, business_unit_id=None):
         }
         for evince in overdue_evinces
     ]
-
 
 
 def fetch_evince_details(evince_id):

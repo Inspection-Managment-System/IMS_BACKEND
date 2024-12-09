@@ -7,7 +7,7 @@ from .site import Site
 
 
 class BusinessUnit(models.Model):
-    name = models.CharField(max_length=25, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     description = models.CharField(max_length=255)
     changed_on = models.DateTimeField(auto_now=True)
     site = models.ForeignKey(Site, on_delete=models.CASCADE)

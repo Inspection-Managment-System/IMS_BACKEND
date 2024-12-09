@@ -16,7 +16,7 @@ class InspectionPoint(models.Model):
         ("Medium", "Medium"),
         ("High", "High"),
     ]
-    name = models.CharField(max_length=25, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     description = models.CharField(max_length=255)
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)

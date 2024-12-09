@@ -4,19 +4,19 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.services.reports import (fetch_analysis_type_report,
+from api.services.reports import (fetch_all_equipment,
+                                  fetch_analysis_type_report,
                                   fetch_business_units_and_evinces,
                                   fetch_certificate_of_inspection,
+                                  fetch_equipment_requiring_calibration,
+                                  fetch_evince_details,
                                   fetch_generic_facility_functionality_report,
                                   fetch_inspection_data,
                                   fetch_inspection_result_trend_report,
-                                  fetch_summary_report, get_inspectors_list,
-                                  single_inspector_performance,
-                                  fetch_evince_details,
                                   fetch_overdue_evinces,
-                                  fetch_all_equipment,
-                                  fetch_equipment_requiring_calibration,
-                                  fetch_single_equipment_report)
+                                  fetch_single_equipment_report,
+                                  fetch_summary_report, get_inspectors_list,
+                                  single_inspector_performance)
 from users.models import User, UserProfile
 
 
@@ -171,8 +171,7 @@ class IMSReportViewSet(viewsets.ViewSet):
             data = fetch_overdue_evinces(inspector_id, business_unit_id)
             return Response({"overdue_evinces": data})
         except Exception as e:
-            return Response({"error": str(e)}, status=500)  
-        
+            return Response({"error": str(e)}, status=500)
 
     @action(detail=False, methods=["get"], url_path="all_equipment")
     def all_equipment(self, request):
@@ -201,13 +200,15 @@ class IMSReportViewSet(viewsets.ViewSet):
         user_id = request.query_params.get("user")
         equipment_id = request.query_params.get("equipment_id")
         if not user_id or not equipment_id:
-            raise ValidationError({"error": "User and equipment_id parameters are required."})
+            raise ValidationError(
+                {"error": "User and equipment_id parameters are required."}
+            )
         try:
             data = fetch_single_equipment_report(user_id, equipment_id)
             return Response({"equipment_details": data})
         except Exception as e:
             return Response({"error": str(e)}, status=500)
-        
+
     @action(detail=False, methods=["get"], url_path="plant_performance")
     def plant_performance(self, request):
         try:
@@ -226,10 +227,13 @@ class IMSReportViewSet(viewsets.ViewSet):
                             "total_downtime": "12 hours",
                             "causes": [
                                 {"cause": "Equipment Failure", "duration": "8 hours"},
-                                {"cause": "Scheduled Maintenance", "duration": "4 hours"}
-                            ]
+                                {
+                                    "cause": "Scheduled Maintenance",
+                                    "duration": "4 hours",
+                                },
+                            ],
                         },
-                        "recommendations": "Invest in predictive maintenance tools to reduce unplanned downtime."
+                        "recommendations": "Invest in predictive maintenance tools to reduce unplanned downtime.",
                     },
                     {
                         "section_name": "Maintenance Activities",
@@ -239,22 +243,21 @@ class IMSReportViewSet(viewsets.ViewSet):
                         "cost_analysis": {
                             "labor_costs": "$10,000",
                             "parts_costs": "$8,500",
-                            "total_costs": "$18,500"
+                            "total_costs": "$18,500",
                         },
-                        "recommendations": "Streamline task scheduling to prevent delays in critical maintenance."
+                        "recommendations": "Streamline task scheduling to prevent delays in critical maintenance.",
                     },
                     {
                         "section_name": "Environmental Compliance",
                         "emission_levels": "Within regulatory limits",
                         "energy_consumption": "1,500,000 kWh",
-                        "recommendations": "Optimize boiler efficiency to reduce fuel consumption."
-                    }
-                ]
+                        "recommendations": "Optimize boiler efficiency to reduce fuel consumption.",
+                    },
+                ],
             }
             return Response({"report": data})
         except Exception as e:
             return Response({"error": str(e)}, status=500)
-    
 
     @action(detail=False, methods=["get"], url_path="oil_and_gas_performance")
     def oil_and_gas_performance(self, request):
@@ -271,15 +274,25 @@ class IMSReportViewSet(viewsets.ViewSet):
                         "total_production": "3,000,000 barrels",
                         "average_production_per_well": "60,000 barrels",
                         "non_operational_wells": 5,
-                        "recommendations": "Reassess the production strategy for underperforming wells."
+                        "recommendations": "Reassess the production strategy for underperforming wells.",
                     },
                     {
                         "section_name": "Incident Reports",
                         "incidents": [
-                            {"date": "2024-08-15", "type": "Oil Leak", "impact": "Minor", "resolution_time": "6 hours"},
-                            {"date": "2024-09-20", "type": "Valve Failure", "impact": "Moderate", "resolution_time": "12 hours"}
+                            {
+                                "date": "2024-08-15",
+                                "type": "Oil Leak",
+                                "impact": "Minor",
+                                "resolution_time": "6 hours",
+                            },
+                            {
+                                "date": "2024-09-20",
+                                "type": "Valve Failure",
+                                "impact": "Moderate",
+                                "resolution_time": "12 hours",
+                            },
                         ],
-                        "recommendations": "Upgrade equipment monitoring systems to reduce incidents."
+                        "recommendations": "Upgrade equipment monitoring systems to reduce incidents.",
                     },
                     {
                         "section_name": "Environmental Compliance",
@@ -287,15 +300,13 @@ class IMSReportViewSet(viewsets.ViewSet):
                         "violations": [
                             {"violation": "Excess flaring", "fine": "$5,000"}
                         ],
-                        "recommendations": "Implement stricter emission control measures."
-                    }
-                ]
+                        "recommendations": "Implement stricter emission control measures.",
+                    },
+                ],
             }
             return Response({"report": data})
         except Exception as e:
             return Response({"error": str(e)}, status=500)
-
-
 
     @action(detail=False, methods=["get"], url_path="factory_quality_assurance")
     def factory_quality_assurance(self, request):
@@ -313,24 +324,24 @@ class IMSReportViewSet(viewsets.ViewSet):
                         "defect_rate": "2.5%",
                         "top_defect_causes": [
                             {"cause": "Machine Misalignment", "percentage": "50%"},
-                            {"cause": "Raw Material Quality", "percentage": "30%"}
+                            {"cause": "Raw Material Quality", "percentage": "30%"},
                         ],
-                        "recommendations": "Enhance material quality checks and conduct equipment recalibration."
+                        "recommendations": "Enhance material quality checks and conduct equipment recalibration.",
                     },
                     {
                         "section_name": "Compliance Status",
                         "inspections_conducted": 5,
                         "compliance_rate": "100%",
-                        "recommendations": "Continue adhering to ISO 9001 standards."
+                        "recommendations": "Continue adhering to ISO 9001 standards.",
                     },
                     {
                         "section_name": "Employee Training",
                         "trained_employees": 120,
                         "total_employees": 150,
                         "training_compliance": "80%",
-                        "recommendations": "Expand training programs to cover 100% of the workforce."
-                    }
-                ]
+                        "recommendations": "Expand training programs to cover 100% of the workforce.",
+                    },
+                ],
             }
             return Response({"report": data})
         except Exception as e:
@@ -350,7 +361,7 @@ class IMSReportViewSet(viewsets.ViewSet):
                         "completion_percentage": "75%",
                         "tasks_completed": 150,
                         "tasks_remaining": 50,
-                        "recommendations": "Allocate additional resources to accelerate structural work."
+                        "recommendations": "Allocate additional resources to accelerate structural work.",
                     },
                     {
                         "section_name": "Budget Analysis",
@@ -358,23 +369,30 @@ class IMSReportViewSet(viewsets.ViewSet):
                         "spent_to_date": "$38,000,000",
                         "remaining_budget": "$12,000,000",
                         "overruns": "$1,500,000",
-                        "recommendations": "Tighten procurement processes to minimize cost overruns."
+                        "recommendations": "Tighten procurement processes to minimize cost overruns.",
                     },
                     {
                         "section_name": "Safety Incidents",
                         "incidents_reported": 2,
                         "details": [
-                            {"date": "2024-11-12", "type": "Fall Injury", "severity": "Moderate"},
-                            {"date": "2024-11-20", "type": "Equipment Malfunction", "severity": "Minor"}
+                            {
+                                "date": "2024-11-12",
+                                "type": "Fall Injury",
+                                "severity": "Moderate",
+                            },
+                            {
+                                "date": "2024-11-20",
+                                "type": "Equipment Malfunction",
+                                "severity": "Minor",
+                            },
                         ],
-                        "recommendations": "Conduct additional safety drills and equipment inspections."
-                    }
-                ]
+                        "recommendations": "Conduct additional safety drills and equipment inspections.",
+                    },
+                ],
             }
             return Response({"report": data})
         except Exception as e:
             return Response({"error": str(e)}, status=500)
-
 
     @action(detail=False, methods=["get"], url_path="hospital_equipment_utilization")
     def hospital_equipment_utilization(self, request):
@@ -390,24 +408,28 @@ class IMSReportViewSet(viewsets.ViewSet):
                         "total_equipment": 200,
                         "utilization_rate": "85%",
                         "underutilized_equipment": 15,
-                        "recommendations": "Relocate underutilized equipment to high-demand departments."
+                        "recommendations": "Relocate underutilized equipment to high-demand departments.",
                     },
                     {
                         "section_name": "Maintenance Overview",
                         "scheduled_maintenance": 30,
                         "completed_maintenance": 28,
                         "pending_maintenance": 2,
-                        "recommendations": "Streamline vendor coordination to ensure timely maintenance."
+                        "recommendations": "Streamline vendor coordination to ensure timely maintenance.",
                     },
                     {
                         "section_name": "Critical Incidents",
                         "incidents_reported": 1,
                         "details": [
-                            {"date": "2024-11-15", "type": "Ventilator Failure", "impact": "Critical"}
+                            {
+                                "date": "2024-11-15",
+                                "type": "Ventilator Failure",
+                                "impact": "Critical",
+                            }
                         ],
-                        "recommendations": "Upgrade ventilator monitoring systems to avoid future incidents."
-                    }
-                ]
+                        "recommendations": "Upgrade ventilator monitoring systems to avoid future incidents.",
+                    },
+                ],
             }
             return Response({"report": data})
         except Exception as e:
