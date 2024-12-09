@@ -1,8 +1,10 @@
+import base64
 from io import BytesIO
 
 import qrcode
-from django.core.files import File
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from users.models.user import User
 
@@ -38,15 +40,23 @@ class InspectionPoint(models.Model):
             box_size=10,
             border=4,
         )
-        qr.add_data(str(self.id))
+
+        qr_data = f"ID: {self.id}\nName: {self.name}\nBusiness Unit: {self.business_unit}\nGroup: {self.group}"
+        qr.add_data(qr_data)
         qr.make(fit=True)
 
         img = qr.make_image(fill_color="black", back_color="white")
 
         img_buffer = BytesIO()
-        img.save(img_buffer)
+        img.save(img_buffer, format="PNG")
         img_buffer.seek(0)
+        base64_string = base64.b64encode(img_buffer.read()).decode("utf-8")
 
-        self.qr_code.save(
-            f"qr_code_{self.name}_{self.id}.png", File(img_buffer), save=True
-        )
+        self.qr_code = base64_string
+        self.save()
+
+
+@receiver(post_save, sender=InspectionPoint)
+def generate_qr_code_after_save(sender, instance, created, **kwargs):
+    if created:
+        instance.generate_qr_code()
