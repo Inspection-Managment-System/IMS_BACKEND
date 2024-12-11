@@ -41,6 +41,12 @@ class ParameterViewSet(viewsets.ModelViewSet):
 
         if "name" in data:
             data["name"] = data["name"].lower()
+        if "min_value" in data and data["min_value"] == "":
+            data["min_value"] = None
+        if "max_value" in data and data["max_value"] == "":
+            data["max_value"] = None
+        if "avg_value" in data and data["avg_value"] == "":
+            data["avg_value"] = None
         if "group" in data:
             group_name = data.get("group")
             data["group"] = DataGroup.objects.get(name=group_name).id
