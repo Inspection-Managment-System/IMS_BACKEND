@@ -45,18 +45,21 @@ class PlannerViewSet(viewsets.ModelViewSet):
         if "month" in data:
             data["month"] = ",".join(data.pop("month"))
 
-        if "evince_business_unit" in data:
-            business_unit_name = data.get("evince_business_unit")
+        if "business_unit" in data:
+            business_unit_name = data.get("business_unit")
             data["evince_business_unit"] = BusinessUnit.objects.get(
                 name=business_unit_name
             ).id
-        if "evince_inspection_point" in data:
-            inspection_point_name = data.get("evince_inspection_point")
+
+        if "inspection_point" in data:
+            inspection_point_name = data.get("inspection_point")
             data["evince_inspection_point"] = InspectionPoint.objects.get(
                 name=inspection_point_name
             ).id
-        if "evince_inspection_analyses" in data:
-            inspection_analysis_names = data.get("evince_inspection_analyses")
+
+        if "inspection_analyses" in data:
+            inspection_analysis_names = data.get("inspection_analyses")
+            data["evince_inspection_analyses"] = inspection_analysis_names
             for index, inspection_analysis_name in enumerate(inspection_analysis_names):
                 data["evince_inspection_analyses"][index] = (
                     InspectionAnalysis.objects.get(name=inspection_analysis_name).id
