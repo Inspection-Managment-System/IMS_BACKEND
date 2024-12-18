@@ -45,6 +45,15 @@ class PlannerViewSet(viewsets.ModelViewSet):
         if "month" in data:
             data["month"] = ",".join(data.pop("month"))
 
+        if "description" in data:
+            data["evince_description"] = data.get("description")
+
+        if "crtical_instructions " in data:
+            data["attachment"] = data.get("crtical_instructions")
+
+        if "crtical_instructions_file_name" in data:
+            data["attachment_name"] = data.get("crtical_instructions_file_name")
+
         if "business_unit" in data:
             business_unit_name = data.get("business_unit")
             data["evince_business_unit"] = BusinessUnit.objects.get(
