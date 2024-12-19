@@ -1,4 +1,4 @@
-from django.db.models import Count, Q
+from django.db.models import Q
 
 from inspection_management.models import InspectionResult, Parameter
 

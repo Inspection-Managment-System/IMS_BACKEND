@@ -1,9 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from django.db.models import Count, Q
 from django.utils.timezone import now
-from rest_framework.decorators import action
-from rest_framework.response import Response
 
 from inspection_management.models import Evince
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Q
+from django.db.models import Avg, DurationField, ExpressionWrapper, F, Q
 
 from inspection_management.models import Evince, InspectionResult, Parameter
 

@@ -1,6 +1,4 @@
-from django.db.models import Count
 
-from inspection_management.models import DataGroup, Evince
 from users.models import User
 
 

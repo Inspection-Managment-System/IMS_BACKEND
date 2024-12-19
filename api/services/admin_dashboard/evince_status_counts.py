@@ -3,8 +3,8 @@ from datetime import timedelta
 from django.db.models import Count, Q
 from django.utils.timezone import now
 
-from inspection_management.models import DataGroup, Evince
-from users.models import User, UserProfile
+from inspection_management.models import Evince
+from users.models import User
 
 
 def get_evince_status_counts(user_id, time_period="all"):

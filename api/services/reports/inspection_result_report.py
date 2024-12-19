@@ -1,8 +1,7 @@
 from datetime import datetime
 
 from django.db.models import (Avg, Count, ExpressionWrapper, F, FloatField,
-                              Max, Min, Q)
-from django.db.models.functions import TruncMonth
+                              Max, Min)
 from django.utils.timezone import make_aware
 
 from inspection_management.models import Evince, InspectionResult

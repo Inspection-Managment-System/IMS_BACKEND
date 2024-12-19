@@ -4,7 +4,6 @@ from django.db.models import Count
 from django.utils.timezone import now
 
 from inspection_management.models import DataGroup, Evince
-from users.models import UserProfile
 
 
 def get_evince_status_overview(user_id, time_period):

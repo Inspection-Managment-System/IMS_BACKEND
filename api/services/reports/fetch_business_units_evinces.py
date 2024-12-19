@@ -1,5 +1,4 @@
 from inspection_management.models import BusinessUnit, Evince
-from users.models import User
 
 
 def fetch_business_units_and_evinces(user, business_unit_id=None):

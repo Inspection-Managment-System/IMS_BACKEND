@@ -3,8 +3,7 @@ from datetime import datetime
 from django.db.models import Count, Q
 from django.utils.timezone import make_aware
 
-from inspection_management.models import (AnalysisType, InspectionResult,
-                                          Parameter)
+from inspection_management.models import AnalysisType, InspectionResult
 
 
 def fetch_analysis_type_report(start_date=None, end_date=None):
