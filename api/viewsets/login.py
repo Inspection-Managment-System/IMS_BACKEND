@@ -32,6 +32,7 @@ class LicenseRequiredMixin:
 
 
 class CustomLoginView(LicenseRequiredMixin, APIView):
+    authentication_classes = []
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):

@@ -9,11 +9,13 @@ from users.models import User, UserProfile
 
 
 class CreateSuperUserView(APIView):
-    def get(self, _):
+    authentication_classes = []
+
+    def post(self, request):
         try:
-            username = "admin"
-            email = "a@g.com"
-            password = "admin"
+            username = request.data.get("username", "admin")
+            email = request.data.get("email", "a@g.com")
+            password = request.data.get("password", "admin")
 
             if User.objects.filter(username=username).exists():
                 return Response(
@@ -28,18 +30,21 @@ class CreateSuperUserView(APIView):
                 )
 
             encrypted_password = make_password(password)
-
             user = User.objects.create(
                 username=username, email=email, password=encrypted_password
             )
+
             roles = ["Admin", "Inspector", "Manager"]
             for role in roles:
-                Group.objects.create(name=role)
+                Group.objects.get_or_create(name=role)
+
             data_group_instance = DataGroup.objects.create(name="System")
 
-            UserProfile.objects.create(
-                user=user, role=Group.objects.first(), data_group=data_group_instance
+            user_profile = UserProfile.objects.create(
+                user=user,
+                role=Group.objects.first(),
             )
+            user_profile.data_groups.add(data_group_instance)
 
             return Response(
                 {

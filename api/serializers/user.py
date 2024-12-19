@@ -22,11 +22,11 @@ class DataGroupSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     role = GroupSerializer()
-    data_group = DataGroupSerializer()
+    data_groups = DataGroupSerializer(many=True)
 
     class Meta:
         model = UserProfile
-        fields = ("role", "data_group", "profile_picture")
+        fields = ("role", "data_groups", "profile_picture")
 
 
 class UserSerializer(serializers.ModelSerializer):

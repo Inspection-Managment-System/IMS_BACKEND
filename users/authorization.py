@@ -11,12 +11,21 @@ def role_required(allowed_roles):
         def wrapped(request, *args, **kwargs):
             try:
                 auth = JWTAuthentication()
-                user, token = auth.authenticate(request)
+                try:
+                    user, token = auth.authenticate(request)
+                except:
+                    return JsonResponse(
+                        {"detail": "Access token not present or is invalid"}, status=400
+                    )
                 payload = token.payload
                 user_role = payload.get("role", None)
 
                 if user_role is None or user_role not in allowed_roles:
-                    return JsonResponse({"detail": "Unauthorized"}, status=403)
+                    return JsonResponse(
+                        ["You are unauthorized for this action."],
+                        status=403,
+                        safe=False,
+                    )
             except (InvalidToken, TokenError) as e:
                 return JsonResponse({"detail": "Invalid token"}, status=401)
 
