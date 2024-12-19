@@ -29,6 +29,12 @@ class PlannerViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
+
+        instance = self.get_object()
+        
+        if "day_of_week" in data:
+            instance.day_of_week = ""
+            instance.save()
         data = self.preprocess_data(data)
 
         partial = kwargs.pop("partial", False)
@@ -48,7 +54,7 @@ class PlannerViewSet(viewsets.ModelViewSet):
         if "description" in data:
             data["evince_description"] = data.get("description")
 
-        if "crtical_instructions " in data:
+        if "crtical_instructions" in data:
             data["attachment"] = data.get("crtical_instructions")
 
         if "crtical_instructions_file_name" in data:
