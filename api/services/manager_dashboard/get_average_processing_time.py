@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.db.models import Avg, F
 
 from inspection_management.models import Evince
@@ -9,7 +7,6 @@ from users.models import User
 def get_average_processing_time(manager_id):
 
     try:
-        # Get the manager and their associated data groups
         manager = User.objects.get(id=manager_id)
         data_groups = manager.userprofile.data_groups.all()
 
@@ -18,10 +15,8 @@ def get_average_processing_time(manager_id):
 
         data_group_ids = data_groups.values_list("id", flat=True)
 
-        # Fetch evinces related to the manager's data groups
         evinces = Evince.objects.filter(business_unit__group_id__in=data_group_ids)
 
-        # Calculate average processing time for each status
         avg_time = (
             evinces.annotate(processing_time=F("changed_on") - F("start_date_time"))
             .values("status")

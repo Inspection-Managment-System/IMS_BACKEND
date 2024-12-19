@@ -1,14 +1,7 @@
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
-from django.db.models import Count, Q
 from django.utils import timezone
 
-from inspection_management.models import (AnalysisType, BusinessUnit, Company,
-                                          DataGroup, Equipment, EquipmentType,
-                                          Evince, Facility, InspectionAnalysis,
-                                          InspectionPoint, Location, Parameter,
-                                          Site, Suite, Unit)
-from users.models import User, UserProfile
+from inspection_management.models import BusinessUnit, Company, Site
+from users.models import User
 
 
 def statistic_cards_data():

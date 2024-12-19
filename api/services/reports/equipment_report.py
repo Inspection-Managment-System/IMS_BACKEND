@@ -9,7 +9,7 @@ User = get_user_model()
 
 
 def fetch_all_equipment(user_id):
-    user = User.objects.get(id=user_id)  # Convert user_id to User object
+    user = User.objects.get(id=user_id)
     data_groups = user.userprofile.data_groups.all()
     equipment = Equipment.objects.filter(group__in=data_groups).select_related(
         "location", "equipment_type", "group", "operator"
@@ -48,15 +48,13 @@ def fetch_all_equipment(user_id):
 
 
 def fetch_equipment_requiring_calibration(user_id):
-    user = User.objects.get(id=user_id)  # Convert user_id to User object
+    user = User.objects.get(id=user_id)
     data_groups = user.userprofile.data_groups.all()
 
-    # Fetch equipment requiring calibration
     equipment = Equipment.objects.filter(
         group__in=data_groups, callibration_expiry__lte=now()
     ).select_related("location", "equipment_type", "group", "operator")
 
-    # Return all relevant details for each equipment
     return [
         {
             "id": equip.id,
@@ -82,7 +80,7 @@ def fetch_equipment_requiring_calibration(user_id):
 
 
 def fetch_single_equipment_report(user_id, equipment_id):
-    user = User.objects.get(id=user_id)  # Convert user_id to User object
+    user = User.objects.get(id=user_id)
     data_groups = user.userprofile.data_groups.all()
     equipment = (
         Equipment.objects.filter(id=equipment_id, group__in=data_groups)

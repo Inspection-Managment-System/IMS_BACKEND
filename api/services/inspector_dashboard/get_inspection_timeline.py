@@ -1,5 +1,4 @@
-from django.db.models import (BooleanField, Case, ExpressionWrapper, F, Value,
-                              When)
+from django.db.models import BooleanField, Case, Value, When
 from django.utils import timezone
 
 from inspection_management.models import Evince

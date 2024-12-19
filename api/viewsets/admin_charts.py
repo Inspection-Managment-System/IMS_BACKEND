@@ -1,7 +1,3 @@
-from datetime import timedelta
-
-from django.db.models import Count
-from django.utils.timezone import now
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,8 +6,7 @@ from api.services.admin_dashboard import (
     get_entity_breakdown_counts, get_evince_status_counts,
     get_evince_status_overview, get_top_business_units_by_evince_count,
     get_top_managers, statistic_cards_data)
-from inspection_management.models import Evince
-from users.models import User, UserProfile
+from users.models import User
 
 
 class AdminChartsViewSet(viewsets.ViewSet):
@@ -37,23 +32,17 @@ class AdminChartsViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="evince_status_counts")
     def evince_status_counts(self, request):
-        user_id = request.query_params.get(
-            "user"
-        )  # Retrieve the user ID from query params
-        time_period = request.query_params.get(
-            "time_period", "all"
-        )  # Time period for filtering
+        user_id = request.query_params.get("user")
+        time_period = request.query_params.get("time_period", "all")
 
         if not user_id:
             return Response({"error": "User ID is required."}, status=400)
 
         try:
-            # Call the utility function
             data = get_evince_status_counts(
                 user_id=int(user_id), time_period=time_period
             )
 
-            # If there's an error in the response, return it
             if "error" in data:
                 return Response(data, status=400)
 
@@ -94,7 +83,7 @@ class AdminChartsViewSet(viewsets.ViewSet):
     )
     def top_business_units_by_evince_count(self, request):
         user_id = request.query_params.get("user")
-        limit = request.query_params.get("limit", 5)  # Default to top 5 business units
+        limit = request.query_params.get("limit", 5)
 
         if not user_id:
             return Response({"error": "User ID is required."}, status=400)
@@ -107,8 +96,8 @@ class AdminChartsViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="top_managers")
     def top_managers(self, request):
-        time_period = request.query_params.get("time_period", "all")  # Default to "all"
-        limit = request.query_params.get("limit", 5)  # Default to top 5 managers
+        time_period = request.query_params.get("time_period", "all")
+        limit = request.query_params.get("limit", 5)
 
         try:
             data = get_top_managers(time_period, int(limit))
@@ -118,14 +107,12 @@ class AdminChartsViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="overall_counts")
     def overall_counts(self, request):
-        user_id = request.query_params.get(
-            "user"
-        )  # Retrieve the user ID from query params
+        user_id = request.query_params.get("user")
         if not user_id:
             return Response({"error": "User ID is required."}, status=400)
 
         try:
-            user = User.objects.get(id=int(user_id))  # Fetch the user object
+            user = User.objects.get(id=int(user_id))
             data = statistic_cards_data(user_id=user.id)
             return Response(data, status=200)
         except User.DoesNotExist:

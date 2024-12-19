@@ -1,6 +1,4 @@
-from datetime import timedelta
 
-from django.db.models import Count
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,8 +8,7 @@ from api.services.manager_dashboard import (
     get_evince_status_overview_for_manager, get_inspectors_list,
     get_manager_stats, get_manager_sunburst_data, get_top_business_units,
     get_top_inspectors_by_evinces)
-from inspection_management.models import Evince
-from users.models import User, UserProfile
+from users.models import User
 
 
 class ManagerChartsViewSet(viewsets.ViewSet):

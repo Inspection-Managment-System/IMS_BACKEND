@@ -19,17 +19,14 @@ def get_top_overdue_business_units(user, start_date=None, end_date=None, limit=5
     Returns:
         list: A list of dictionaries with business unit details and evince statistics.
     """
-    # Current time for overdue filtering
     current_time = now()
 
-    # Base filter for overdue evinces
     overdue_filter = Q(
         assigned_to=user,
         status__in=["Logged", "Incomplete", "Pending"],
-        end_date_time__lt=current_time,  # Overdue if end time is in the past
+        end_date_time__lt=current_time,
     )
 
-    # Add date filters if provided
     if start_date:
         start_date = make_aware(datetime.strptime(start_date, "%Y-%m-%d"))
         overdue_filter &= Q(start_date_time__gte=start_date)
@@ -37,19 +34,17 @@ def get_top_overdue_business_units(user, start_date=None, end_date=None, limit=5
         end_date = make_aware(datetime.strptime(end_date, "%Y-%m-%d"))
         overdue_filter &= Q(end_date_time__lte=end_date)
 
-    # Query overdue evinces grouped by business unit
     overdue_evinces = (
         Evince.objects.filter(overdue_filter)
         .values("inspection_point__business_unit__name")
         .annotate(
-            evince_count=Count("id"),  # Count evinces
-            earliest_start=Min("start_date_time"),  # Earliest start date
-            latest_end=Max("end_date_time"),  # Latest end date
+            evince_count=Count("id"),
+            earliest_start=Min("start_date_time"),
+            latest_end=Max("end_date_time"),
         )
-        .order_by("-evince_count")[:limit]  # Limit results by top evince counts
+        .order_by("-evince_count")[:limit]
     )
 
-    # Format results
     return [
         {
             "business_unit": evince["inspection_point__business_unit__name"],

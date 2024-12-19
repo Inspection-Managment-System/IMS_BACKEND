@@ -1,7 +1,3 @@
-from django.db.models import Count
-from rest_framework.decorators import action
-from rest_framework.response import Response
-
 from inspection_management.models import Evince
 from users.models import User
 
@@ -12,7 +8,6 @@ def get_manager_sunburst_data(manager_id):
     specifically for the manager's assigned data groups.
     """
     try:
-        # Fetch the manager and associated data groups
         manager = User.objects.get(id=manager_id)
         data_groups = manager.userprofile.data_groups.all()
 
@@ -21,10 +16,8 @@ def get_manager_sunburst_data(manager_id):
 
         data_group_ids = data_groups.values_list("id", flat=True)
 
-        # Filter evinces based on the manager's assigned data groups
         evinces = Evince.objects.filter(business_unit__group_id__in=data_group_ids)
 
-        # Prepare data for the Sunburst chart
         data = []
         for group in data_groups:
             group_data = {"name": group.name, "children": []}
@@ -41,10 +34,10 @@ def get_manager_sunburst_data(manager_id):
                     business_unit__group_id=group.id, status=status
                 ).count()
 
-                if count > 0:  # Include only statuses with non-zero counts
+                if count > 0:
                     group_data["children"].append({"name": status, "value": count})
 
-            if group_data["children"]:  # Add only if the group has relevant data
+            if group_data["children"]:
                 data.append(group_data)
 
         return {"data": data}

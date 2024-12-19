@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from django.db.models import Count
 from django.utils.timezone import now
 
 from inspection_management.models import Evince
@@ -18,11 +17,9 @@ def get_manager_stats(manager_id):
         data_group_ids = data_groups.values_list("id", flat=True)
         evinces = Evince.objects.filter(business_unit__group_id__in=data_group_ids)
 
-        # Timeframe calculations
         last_7_days = now() - timedelta(days=7)
         last_30_days = now() - timedelta(days=30)
 
-        # Calculate total evinces
         total_evinces = evinces.filter(reviewed_by_id=manager_id).count()
         total_evinces_last_7_days = evinces.filter(
             reviewed_by_id=manager_id, changed_on__gte=last_7_days
@@ -34,7 +31,6 @@ def get_manager_stats(manager_id):
         statuses = ["Approved", "Rejected", "Reassigned"]
         status_data = {}
 
-        # Calculate overall count, last 7 days count, and last month count for each status
         for status in statuses:
             overall_count = evinces.filter(
                 reviewed_by_id=manager_id, status=status

@@ -29,7 +29,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         print("Planner Running...")
         while True:
-            # Make 'now' timezone-aware
             now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
             print("Now: ", now)
 
@@ -44,7 +43,6 @@ class Command(BaseCommand):
                     print("Not in range yet..")
                     continue
 
-                # Time-based logic for rule matching
                 if (
                     planner.rule == "Daily"
                     and now.time() >= start_time.time()
