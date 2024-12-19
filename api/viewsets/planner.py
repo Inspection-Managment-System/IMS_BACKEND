@@ -31,10 +31,7 @@ class PlannerViewSet(viewsets.ModelViewSet):
         data = request.data.copy()
 
         instance = self.get_object()
-        
-        if "day_of_week" in data:
-            instance.day_of_week = ""
-            instance.save()
+
         data = self.preprocess_data(data)
 
         partial = kwargs.pop("partial", False)
@@ -45,9 +42,6 @@ class PlannerViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def preprocess_data(self, data):
-        if "day_of_week" in data:
-            data["day_of_week"] = ",".join(data.pop("day_of_week"))
-
         if "month" in data:
             data["month"] = ",".join(data.pop("month"))
 
