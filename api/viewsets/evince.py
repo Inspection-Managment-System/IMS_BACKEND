@@ -23,7 +23,7 @@ from users.models import User
     role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
 )
 class EvinceViewSet(viewsets.ModelViewSet):
-    queryset = Evince.objects.all()
+    queryset = Evince.objects.all().order_by("-id")
     serializer_class = EvinceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
