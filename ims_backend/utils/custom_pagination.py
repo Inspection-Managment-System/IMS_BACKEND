@@ -4,6 +4,12 @@ from rest_framework.response import Response
 
 class CustomPagination(PageNumberPagination):
     def get_paginated_response(self, data):
+        request = self.request
+        pagination = request.query_params.get("pagination", "true").lower()
+
+        if pagination == "false":
+            return Response(data)
+
         return Response(
             {
                 "currentPage": self.page.number,
