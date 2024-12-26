@@ -22,3 +22,4 @@ from .admin_charts import AdminChartsViewSet
 from .inspector_dashboard import InspectorDashboardViewSet
 from .manager_dashboard import ManagerChartsViewSet
 from .reports import IMSReportViewSet
+from .password_reset import PasswordResetAPIView
