@@ -26,7 +26,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ("role", "data_groups", "profile_picture")
+        fields = ("role", "data_groups", "shift", "profile_picture")
 
 
 class UserSerializer(serializers.ModelSerializer):
