@@ -23,10 +23,11 @@ class DataGroupSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     role = GroupSerializer()
     data_groups = DataGroupSerializer(many=True)
+    shift_timing = serializers.CharField(source="get_shift_timing", read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ("role", "data_groups", "shift", "profile_picture")
+        fields = ("role", "data_groups", "shift", "shift_timing", "profile_picture")
 
 
 class UserSerializer(serializers.ModelSerializer):
