@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
@@ -22,9 +22,50 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         user_type = request.query_params.get("user_type", None)
+        user_id = request.query_params.get("user_id", None)
+
+        if user_id:
+            try:
+                user = User.objects.get(id=user_id)
+                if hasattr(user, "userprofile") and user.userprofile:
+                    request_user_data_groups = user.userprofile.data_groups.all()
+                    self.queryset = self.queryset.filter(
+                        userprofile__data_groups__in=request_user_data_groups
+                    ).distinct()
+
+                    self.queryset = self.queryset.exclude(id=user_id)
+
+                else:
+                    return Response(
+                        {"detail": "UserProfile not found for the given user_id."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            except User.DoesNotExist:
+                return Response(
+                    {"detail": "User not found with the given user_id."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
         if user_type:
-            related_users = get_user_through_role(user_type)
-            self.queryset = related_users
+            try:
+                related_users = get_user_through_role(user_type)
+
+                if isinstance(related_users, list):
+                    related_user_ids = [user.id for user in related_users]
+                    self.queryset = self.queryset.filter(id__in=related_user_ids)
+                else:
+                    self.queryset = self.queryset.filter(
+                        id__in=related_users.values_list("id", flat=True)
+                    )
+
+            except Exception as e:
+                return Response(
+                    {
+                        "detail": f"Error fetching users for user_type '{user_type}': {str(e)}"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         return super().list(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):

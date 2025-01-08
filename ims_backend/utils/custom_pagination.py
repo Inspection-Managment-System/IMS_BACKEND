@@ -3,6 +3,14 @@ from rest_framework.response import Response
 
 
 class CustomPagination(PageNumberPagination):
+    def paginate_queryset(self, queryset, request, view=None):
+        pagination = request.query_params.get("pagination", "false").lower()
+
+        if pagination == "true":
+            return super().paginate_queryset(queryset, request, view)
+
+        return None
+
     def get_paginated_response(self, data):
         request = self.request
         pagination = request.query_params.get("pagination", "false").lower()
