@@ -23,3 +23,5 @@ from .inspector_dashboard import InspectorDashboardViewSet
 from .manager_dashboard import ManagerChartsViewSet
 from .reports import IMSReportViewSet
 from .password_reset import PasswordResetAPIView
+from .notification import NotificationViewSet
+from .audit_history import AuditHistoryViewSet

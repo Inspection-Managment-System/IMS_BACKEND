@@ -23,10 +23,14 @@ from api.viewsets import (
     InspectorDashboardViewSet,
     ManagerChartsViewSet,
     IMSReportViewSet,
+    NotificationViewSet,
+    AuditHistoryViewSet,
 )
 
 router = DefaultRouter()
 router.register(r"datagroups", DatagroupViewSet, basename="datagroup")
+router.register(r"audit_history", AuditHistoryViewSet, basename="audit_history")
+router.register(r"notifications", NotificationViewSet, basename="notifications")
 router.register(r"users", UserViewSet, basename="user")
 router.register(r"companies", CompanyViewSet, basename="company")
 router.register(r"sites", SiteViewSet, basename="site")

@@ -1,8 +1,8 @@
 from django.contrib.auth.models import Group
-from users.models import UserProfile
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
@@ -10,9 +10,7 @@ from api.serializers import UserSerializer
 from ims_backend.utils.helper import get_user_through_role
 from inspection_management.models import DataGroup
 from users.authorization import role_required
-from users.models import User
-from rest_framework.decorators import action
-
+from users.models import User, UserProfile
 
 
 @method_decorator(
@@ -126,5 +124,3 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="get_shifts")
     def get_all_shifts(self, request, *args, **kwargs):
         return Response(UserProfile.SHIFT_TIMINGS)
-        
-
