@@ -211,34 +211,6 @@ class EvinceViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=["post"], url_path="assign-shift")
-    def assign_shift(self, request, pk=None):
-        """
-        API endpoint to assign a shift to the user associated with an Evince.
-        """
-        evince = get_object_or_404(Evince, pk=pk)
-        shift = request.data.get("shift")
-
-        if not shift:
-            return Response(
-                {"error": "Shift is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not hasattr(evince.assigned_to, "userprofile"):
-            return Response(
-                {"error": "User profile does not exist for the assigned user."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        evince.assigned_to.userprofile.shift = shift
-        evince.assigned_to.userprofile.save()
-
-        return Response(
-            {"message": f"Shift '{shift}' assigned successfully."},
-            status=status.HTTP_200_OK,
-        )
-
     def handle_status_update(self, evince, status_to_update):
         """
         Handles the status update and relevant InspectionResult modifications.

@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Group
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -124,3 +125,31 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="get_shifts")
     def get_all_shifts(self, request, *args, **kwargs):
         return Response(UserProfile.SHIFT_TIMINGS)
+
+    @action(detail=True, methods=["post"], url_path="assign-shift")
+    def assign_shift(self, request, pk=None):
+        """
+        API endpoint to assign a shift to the userpos.
+        """
+        user = get_object_or_404(User, pk=pk)
+        shift = request.data.get("shift")
+
+        if not shift:
+            return Response(
+                {"error": "Shift is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not hasattr(user, "userprofile"):
+            return Response(
+                {"error": "User profile does not exist for the assigned user."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.userprofile.shift = shift
+        user.userprofile.save()
+
+        return Response(
+            {"message": f"Shift '{shift}' assigned successfully."},
+            status=status.HTTP_200_OK,
+        )
