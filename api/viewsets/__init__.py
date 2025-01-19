@@ -25,3 +25,4 @@ from .reports import IMSReportViewSet
 from .password_reset import PasswordResetAPIView
 from .notification import NotificationViewSet
 from .audit_history import AuditHistoryViewSet
+from .password_change import PasswordChangeAPIView
