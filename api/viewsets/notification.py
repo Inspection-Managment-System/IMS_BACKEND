@@ -14,3 +14,9 @@ class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all().order_by("-id")
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        if "user_id" in request.query_params:
+            user_id = request.query_params["user_id"]
+            self.queryset = self.queryset.filter(recipient_id=user_id)
+        return super().list(request, *args, **kwargs)
