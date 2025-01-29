@@ -32,19 +32,27 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="mark_as_read")
     def mark_as_read(self, request, *args, **kwargs):
-        notification_ids = request.data.get("ids", [])
-        if not notification_ids:
+        notification_id = request.data.get("id", None)
+        if not notification_id:
             return Response(
-                {"detail": "No notification IDs provided."},
+                {"detail": "No notification ID provided."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if notification_id == "all":
+            notifications = self.queryset.filter(recipient=request.user, is_read=False)
+            notifications.update(is_read=True)
+            return Response(
+                {"detail": f"All Notifications marked as read."},
+                status=status.HTTP_200_OK,
+            )
 
-        notifications = Notification.objects.filter(
-            id__in=notification_ids, recipient=request.user
-        )
-        updated_count = notifications.update(is_read=True)
-
-        return Response(
-            {"detail": f"{updated_count} notifications marked as read."},
-            status=status.HTTP_200_OK,
-        )
+        else:
+            notification = Notification.objects.get(
+                id=notification_id, recipient=request.user
+            )
+            notification.is_read = True
+            notification.save()
+            return Response(
+                {"detail": "Notification marked as read."},
+                status=status.HTTP_200_OK,
+            )
