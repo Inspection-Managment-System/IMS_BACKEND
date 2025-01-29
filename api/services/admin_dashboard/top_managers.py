@@ -26,7 +26,10 @@ def get_top_managers(time_period, limit=5):
 
     manager_approval_counts = (
         queryset.values(
-            "reviewed_by__id", "reviewed_by__username", "reviewed_by__email"
+            "reviewed_by__id",
+            "reviewed_by__username",
+            "reviewed_by__email",
+            "reviewed_by__userprofile__profile_picture",
         )
         .annotate(approved_count=Count("id"))
         .order_by("-approved_count")[:limit]
@@ -37,6 +40,9 @@ def get_top_managers(time_period, limit=5):
             "manager_id": item["reviewed_by__id"],
             "manager_name": item["reviewed_by__username"],
             "manager_email": item["reviewed_by__email"],
+            "manager_profile_picture": item[
+                "reviewed_by__userprofile__profile_picture"
+            ],
             "approved_count": item["approved_count"],
         }
         for item in manager_approval_counts
