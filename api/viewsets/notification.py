@@ -23,12 +23,12 @@ class NotificationViewSet(viewsets.ModelViewSet):
             self.queryset = self.queryset.filter(recipient_id=user_id)
         unread_count = self.queryset.filter(is_read=False).count()
 
-        serialized_data = self.get_serializer(self.queryset, many=True).data
+        response = super().list(request, *args, **kwargs)
 
-        response_data = {"unread_count": unread_count, "notifications": serialized_data}
+        response_data = {"unread_count": unread_count, "notifications": response.data}
+        response.data = response_data
 
-        return Response(response_data)
-        return super().list(request, *args, **kwargs)
+        return response
 
     @action(detail=False, methods=["post"], url_path="mark_as_read")
     def mark_as_read(self, request, *args, **kwargs):
