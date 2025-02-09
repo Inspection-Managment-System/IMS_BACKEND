@@ -22,6 +22,7 @@ class Parameter(models.Model):
     string_value = models.CharField(max_length=255, null=True, blank=True)
     attachment_name = models.CharField(max_length=255, blank=True, null=True)
     attachment = models.TextField(blank=True, null=True)
+    is_checked = models.BooleanField(default=False, blank=True, null=True)
 
     def __str__(self):
         return self.name

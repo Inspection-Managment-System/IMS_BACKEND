@@ -18,6 +18,14 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         and marks the status as 'Completed'.
         """
         inspection_result = get_object_or_404(InspectionResult, pk=pk)
+        related_evince = inspection_result.inspection_test.evince
+        if related_evince.type == "Checklist":
+            is_checked = request.data.get("is_checked", None)
+            inspection_result.inspection_test.inspection_analysis.parameter_set.first().is_checked = (
+                is_checked
+            )
+            inspection_result.inspection_test.inspection_analysis.parameter_set.first().save()
+
         entered_value = request.data.get("entered_value", None)
         comments = request.data.get("comments", "")
         attachment_name = request.data.get("attachment_name", "")

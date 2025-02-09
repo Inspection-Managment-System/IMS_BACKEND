@@ -14,6 +14,10 @@ class Evince(models.Model):
         ("Rejected", "Rejected"),
         ("Reassigned", "Reassigned"),
     ]
+    EVINCE_TYPE_CHOICES = [
+        ("Hirearchical", "Hirearchical"),
+        ("Checklist", "Checklist"),
+    ]
     name = models.CharField(max_length=255, unique=True, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
     changed_on = models.DateTimeField(auto_now=True)
@@ -42,6 +46,9 @@ class Evince(models.Model):
     start_date_time = models.DateTimeField(blank=True, null=True)
     end_date_time = models.DateTimeField(blank=True, null=True)
     reassigned = models.BooleanField(default=False)
+    evince_type = models.CharField(
+        max_length=20, choices=EVINCE_TYPE_CHOICES, default="Hirearchical"
+    )
 
     @classmethod
     def get_status_labels(cls):

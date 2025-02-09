@@ -1,6 +1,6 @@
 from django.core.mail import EmailMultiAlternatives
-from django.utils.html import format_html
 from django.utils.crypto import get_random_string
+from django.utils.html import format_html
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
@@ -80,6 +80,8 @@ class PasswordResetAPIView(APIView):
             temporary_password,
         )
 
-        email = EmailMultiAlternatives(subject, text_content, from_email, recipient_list)
+        email = EmailMultiAlternatives(
+            subject, text_content, from_email, recipient_list
+        )
         email.attach_alternative(html_content, "text/html")
         email.send()
