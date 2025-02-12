@@ -19,7 +19,7 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         """
         inspection_result = get_object_or_404(InspectionResult, pk=pk)
         related_evince = inspection_result.inspection_test.evince
-        if related_evince.type == "Checklist":
+        if related_evince.evince_type == "Checklist":
             is_checked = request.data.get("is_checked", None)
             inspection_result.inspection_test.inspection_analysis.parameter_set.first().is_checked = (
                 is_checked
