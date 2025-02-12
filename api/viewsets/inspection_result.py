@@ -19,31 +19,33 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         """
         inspection_result = get_object_or_404(InspectionResult, pk=pk)
         related_evince = inspection_result.inspection_test.evince
+
         if related_evince.evince_type == "Checklist":
-            is_checked = request.data.get("is_checked", None)
-            inspection_result.inspection_test.inspection_analysis.parameter_set.first().is_checked = (
-                is_checked
-            )
-            inspection_result.inspection_test.inspection_analysis.parameter_set.first().save()
-
-        entered_value = request.data.get("entered_value", None)
-        comments = request.data.get("comments", "")
-        attachment_name = request.data.get("attachment_name", "")
-        attachment = request.data.get("attachment", "")
-
-        if not entered_value:
-            return Response(
-                {"error": "Entered value is required."},
-                status=status.HTTP_400_BAD_REQUEST,
+            is_checked = request.data.get("is_checked")
+            parameter = (
+                inspection_result.inspection_test.inspection_analysis.parameter_set.first()
             )
 
-        inspection_result.entered_value = entered_value
-        inspection_result.comments = comments
+            if parameter:
+                parameter.is_checked = is_checked
+                parameter.save()
+
+        else:
+            entered_value = request.data.get("entered_value")
+            if not entered_value:
+                return Response(
+                    {"error": "Entered value is required."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            inspection_result.entered_value = entered_value
+            inspection_result.comments = request.data.get("comments", "")
+
+            if "attachment" in request.data and "attachment_name" in request.data:
+                inspection_result.attachment_name = request.data["attachment_name"]
+                inspection_result.attachment = request.data["attachment"]
+
         inspection_result.status = "Completed"
-
-        if attachment and attachment_name:
-            inspection_result.attachment_name = attachment_name
-            inspection_result.attachment = attachment
 
         inspection_result.save()
 
