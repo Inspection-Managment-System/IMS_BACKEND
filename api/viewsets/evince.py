@@ -9,12 +9,13 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from api.serializers import (EvinceSerializer,
+from api.serializers import (EvinceSerializer, ParameterSerializer,
                              SimplifiedInspectionResultSerializer)
 from ims_backend.utils.helper import get_user_groups
 from inspection_management.models import (BusinessUnit, Evince,
                                           InspectionAnalysis, InspectionPoint,
-                                          InspectionResult, InspectionTest)
+                                          InspectionResult, InspectionTest,
+                                          Parameter)
 from users.authorization import role_required
 from users.models import User
 
@@ -180,11 +181,28 @@ class EvinceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="results")
     def get_results(self, request, pk=None):
         """
-        Fetch the results related to a specific Evince.
+        Fetch the results and related parameters for a specific Evince.
         """
         inspection_results = InspectionResult.objects.filter(evince_id=pk)
-        serializer = SimplifiedInspectionResultSerializer(inspection_results, many=True)
-        return Response(serializer.data)
+        related_tests = InspectionTest.objects.filter(evince_id=pk).select_related(
+            "inspection_analysis"
+        )
+
+        related_parameters = Parameter.objects.filter(
+            inspection_analysis__inspectiontest__in=related_tests
+        ).distinct()
+
+        result_serializer = SimplifiedInspectionResultSerializer(
+            inspection_results, many=True
+        )
+        parameter_serializer = ParameterSerializer(related_parameters, many=True)
+
+        return Response(
+            {
+                "inspection_results": result_serializer.data,
+                "related_parameters": parameter_serializer.data,
+            }
+        )
 
     @action(detail=True, methods=["post"], url_path="status-update")
     def update_status(self, request, pk=None):
