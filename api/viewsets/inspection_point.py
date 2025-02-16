@@ -60,6 +60,8 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
             data["group"] = business_unit.group.id
             data["business_unit"] = business_unit.id
 
+        return data
+
     @action(detail=False, methods=["post"], url_path="categorize")
     def categorize(self, request, *args, **kwargs):
         flammability = request.data.get("flammability")
@@ -82,5 +84,3 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
         return Response(
             {"overall_hazard_level": overall_hazard_level}, status=status.HTTP_200_OK
         )
-
-        return data
