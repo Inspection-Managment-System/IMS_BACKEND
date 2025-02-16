@@ -28,6 +28,8 @@ class InspectionPoint(models.Model):
     flammability = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
     health_risk = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
     reactivity = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
+    latitude = models.FloatField(default=0.0000)
+    longitude = models.FloatField(default=0.0000)
     attachment_name = models.CharField(max_length=255, blank=True, null=True)
     attachment = models.TextField(blank=True, null=True)
 
