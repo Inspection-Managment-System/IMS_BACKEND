@@ -27,6 +27,7 @@ class InspectionPoint(models.Model):
     qr_code = models.TextField(blank=True, null=True)
     flammability = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
     health_risk = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
+    reactivity = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
     attachment_name = models.CharField(max_length=255, blank=True, null=True)
     attachment = models.TextField(blank=True, null=True)
 
