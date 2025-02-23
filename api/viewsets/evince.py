@@ -140,8 +140,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
     def create_inspection_tests_and_results(self, evince, is_update=False):
         if is_update:
             InspectionTest.objects.filter(evince=evince).delete()
-            InspectionResult.objects.filter(evince=evince
-            ).delete()
+            InspectionResult.objects.filter(evince=evince).delete()
         for inspection_analysis in evince.inspection_analyses.all():
             inspection_test = InspectionTest.objects.create(
                 evince=evince,

@@ -1,3 +1,4 @@
+from django.db.models import Count
 from django.utils.decorators import method_decorator
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
@@ -18,11 +19,16 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         analysis_type_name = request.query_params.get("analysis_type", None)
+        list_for_evince = request.query_params.get("list_for_evince", None)
         if analysis_type_name:
             related_inspection_analyses = (
                 get_related_inspection_analyses_from_analysis_type(analysis_type_name)
             )
             self.queryset = related_inspection_analyses
+        if list_for_evince:
+            self.queryset = self.queryset.annotate(
+                param_count=Count("parameter")
+            ).filter(param_count__gt=0)
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
