@@ -131,13 +131,17 @@ class EvinceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         serializer.instance.save()
-        self.create_inspection_tests_and_results(serializer.instance)
+        self.create_inspection_tests_and_results(serializer.instance, is_update=False)
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
 
-    def create_inspection_tests_and_results(self, evince):
+    def create_inspection_tests_and_results(self, evince, is_update=False):
+        if is_update:
+            InspectionTest.objects.filter(evince=evince).delete()
+            InspectionResult.objects.filter(evince=evince
+            ).delete()
         for inspection_analysis in evince.inspection_analyses.all():
             inspection_test = InspectionTest.objects.create(
                 evince=evince,
@@ -159,6 +163,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+        self.create_inspection_tests_and_results(serializer.instance, is_update=True)
         return Response(serializer.data)
 
     def preprocess_data(self, data):
