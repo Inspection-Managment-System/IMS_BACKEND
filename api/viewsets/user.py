@@ -2,6 +2,7 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from django.utils.timezone import now
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -9,7 +10,7 @@ from rest_framework.response import Response
 
 from api.serializers import UserSerializer
 from ims_backend.utils.helper import get_user_through_role
-from inspection_management.models import DataGroup
+from inspection_management.models import DataGroup, Evince
 from users.authorization import role_required
 from users.models import User, UserProfile
 
@@ -151,5 +152,61 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return Response(
             {"message": f"Shift '{shift}' assigned successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["get"], url_path="inspection_points_pins_data")
+    def get_inspection_points_pins_data(self, request):
+        user = request.user
+        today = now().date()
+
+        if hasattr(user, "userprofile") and user.userprofile:
+            role = user.userprofile.role.name
+        else:
+            return Response(
+                {"error": "User profile or role not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if role == "Admin":
+            evinces = Evince.objects.filter(logged_by=user, start_date_time__date=today)
+        elif role == "Manager":
+            evinces = Evince.objects.filter(
+                managed_by=user, start_date_time__date=today
+            )
+        elif role == "Inspector":
+            evinces = Evince.objects.filter(
+                assigned_to=user, start_date_time__date=today
+            )
+        else:
+            return Response(
+                {"error": "Unauthorized role."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        inspection_data = {}
+
+        for evince in evinces:
+            inspection_point_id = evince.inspection_point.id
+            if inspection_point_id not in inspection_data:
+                inspection_data[inspection_point_id] = {
+                    "inspections_point_id": inspection_point_id,
+                    "inspections_point_name": evince.inspection_point.name,
+                    "longitude": evince.inspection_point.longitude,
+                    "latitude": evince.inspection_point.latitude,
+                    "number_of_evinces_with_respect_to_user": 0,
+                    "number_of_evinces_with_status_of_results_entered": 0,
+                }
+
+            inspection_data[inspection_point_id][
+                "number_of_evinces_with_respect_to_user"
+            ] += 1
+
+            if evince.status == "ResultsEntered":
+                inspection_data[inspection_point_id][
+                    "number_of_evinces_with_status_of_results_entered"
+                ] += 1
+
+        return Response(
+            {"inspections_points_pins_data": list(inspection_data.values())},
             status=status.HTTP_200_OK,
         )
