@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.serializers import InspectionPointSerializer
-from ims_backend.utils import inspection_point_categorization
+from ims_backend.utils import geodesic_algo, inspection_point_categorization
 from ims_backend.utils.helper import \
     get_related_inspection_points_from_business_unit
 from inspection_management.models import BusinessUnit, InspectionPoint
@@ -83,4 +83,29 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
         )
         return Response(
             {"overall_hazard_level": overall_hazard_level}, status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=["get"], url_path="check_user_location")
+    def check_user_location(self, request, *args, **kwargs):
+        latitude = request.query_params.get("latitude")
+        longitude = request.query_params.get("longitude")
+        inspection_point_id = request.query_params.get("inspection_point_id")
+
+        if not all([latitude, longitude, inspection_point_id]):
+            return Response(
+                {
+                    "detail": "All parameters (latitude, longitude, inspection_point_id) are required."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        inspection_point = InspectionPoint.objects.get(id=inspection_point_id)
+        target_coords = (inspection_point.latitude, inspection_point.longitude)
+        user_coords = (latitude, longitude)
+
+        is_user_at_location = geodesic_algo.is_user_at_location(
+            target_coords, user_coords, 50
+        )
+        return Response(
+            {"is_user_at_location": is_user_at_location}, status=status.HTTP_200_OK
         )
