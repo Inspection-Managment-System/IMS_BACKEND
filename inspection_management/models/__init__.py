@@ -17,3 +17,4 @@ from .inspection_result import InspectionResult
 from .planner import Planner
 from .equipment_type import EquipmentType
 from .datalist import DataList
+from .ticket import Ticket

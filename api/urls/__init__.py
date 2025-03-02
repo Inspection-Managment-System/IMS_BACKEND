@@ -25,6 +25,7 @@ from api.viewsets import (
     IMSReportViewSet,
     NotificationViewSet,
     AuditHistoryViewSet,
+    TicketViewSet,
 )
 
 router = DefaultRouter()
@@ -63,6 +64,7 @@ router.register(
 )
 
 router.register(r"reports", IMSReportViewSet, basename="reports")
+router.register(r"tickets", TicketViewSet, basename="tickets")
 
 
 urlpatterns = [
