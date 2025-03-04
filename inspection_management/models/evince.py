@@ -45,6 +45,8 @@ class Evince(models.Model):
     crtical_instructions_file_name = models.CharField(
         max_length=255, blank=True, null=True
     )
+    sample_required = models.BooleanField(default=False)
+    sample_content = models.JSONField(blank=True, null=True)
     crtical_instructions = models.TextField(blank=True, null=True)
     start_date_time = models.DateTimeField(blank=True, null=True)
     end_date_time = models.DateTimeField(blank=True, null=True)

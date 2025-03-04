@@ -182,7 +182,11 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Unauthorized role."}, status=status.HTTP_403_FORBIDDEN
             )
-
+        if not evinces.exists():
+            return Response(
+                {"inspections_points_pins_data": []},
+                status=status.HTTP_200_OK,
+            )
         inspection_data = {}
 
         for evince in evinces:
