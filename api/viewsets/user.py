@@ -169,10 +169,14 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         if role == "Admin":
-            evinces = Evince.objects.filter(logged_by=user, start_date_time__date=today)
+            inspector_id = request.query_params.get("inspector")
+            user = User.objects.get(id=inspector_id)
+            evinces = Evince.objects.filter(
+                assigned_to=user, start_date_time__date=today
+            )
         elif role == "Manager":
             evinces = Evince.objects.filter(
-                managed_by=user, start_date_time__date=today
+                reviewed_by=user, start_date_time__date=today
             )
         elif role == "Inspector":
             evinces = Evince.objects.filter(
