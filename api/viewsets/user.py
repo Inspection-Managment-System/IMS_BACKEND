@@ -10,6 +10,8 @@ from rest_framework.response import Response
 
 from api.serializers import UserSerializer
 from ims_backend.utils.helper import get_user_through_role
+from ims_backend.utils.inspection_point_data_utils import (
+    get_user_location, sort_evinces_by_distance)
 from inspection_management.models import DataGroup, Evince
 from users.authorization import role_required
 from users.models import User, UserProfile
@@ -157,64 +159,56 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="inspection_points_pins_data")
     def get_inspection_points_pins_data(self, request):
-        user = request.user
+        """Fetches inspection points and sorts them based on user's location."""
         today = now().date()
 
-        if hasattr(user, "userprofile") and user.userprofile:
-            role = user.userprofile.role.name
-        else:
+        user_location = get_user_location(request)
+        if isinstance(user_location, Response):
+            return user_location
+        evinces = self.get_evinces_for_user(request.user, today)
+        if isinstance(evinces, Response):
+            return evinces
+        inspection_data = sort_evinces_by_distance(evinces, user_location)
+
+        return Response(
+            {"inspections_points_pins_data": inspection_data},
+            status=status.HTTP_200_OK,
+        )
+
+    def get_evinces_for_user(self, user, today):
+        """Fetches evinces based on the user's role."""
+        if not hasattr(user, "userprofile") or not user.userprofile:
             return Response(
                 {"error": "User profile or role not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        role = user.userprofile.role.name
+
         if role == "Admin":
-            inspector_id = request.query_params.get("inspector")
-            user = User.objects.get(id=inspector_id)
-            evinces = Evince.objects.filter(
-                assigned_to=user, start_date_time__date=today
-            )
+            inspector_id = self.request.query_params.get("inspector")
+            if not inspector_id:
+                return Response(
+                    {"error": "Inspector ID is required."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                user = User.objects.get(id=inspector_id)
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "Inspector not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            return Evince.objects.filter(assigned_to=user, start_date_time__date=today)
+
         elif role == "Manager":
-            evinces = Evince.objects.filter(
-                reviewed_by=user, start_date_time__date=today
-            )
+            return Evince.objects.filter(reviewed_by=user, start_date_time__date=today)
+
         elif role == "Inspector":
-            evinces = Evince.objects.filter(
-                assigned_to=user, start_date_time__date=today
-            )
-        else:
-            return Response(
-                {"error": "Unauthorized role."}, status=status.HTTP_403_FORBIDDEN
-            )
-        if not evinces.exists():
-            return Response(
-                {"inspections_points_pins_data": []},
-                status=status.HTTP_200_OK,
-            )
-        inspection_data = {}
-
-        for evince in evinces:
-            inspection_point_id = evince.inspection_point.id
-            if inspection_point_id not in inspection_data:
-                inspection_data[inspection_point_id] = {
-                    "inspections_point_id": inspection_point_id,
-                    "inspections_point_name": evince.inspection_point.name,
-                    "longitude": evince.inspection_point.longitude,
-                    "latitude": evince.inspection_point.latitude,
-                    "number_of_evinces_with_respect_to_user": 0,
-                    "number_of_evinces_with_status_of_results_entered": 0,
-                }
-
-            inspection_data[inspection_point_id][
-                "number_of_evinces_with_respect_to_user"
-            ] += 1
-
-            if evince.status == "ResultsEntered":
-                inspection_data[inspection_point_id][
-                    "number_of_evinces_with_status_of_results_entered"
-                ] += 1
+            return Evince.objects.filter(assigned_to=user, start_date_time__date=today)
 
         return Response(
-            {"inspections_points_pins_data": list(inspection_data.values())},
-            status=status.HTTP_200_OK,
+            {"error": "Unauthorized role."},
+            status=status.HTTP_403_FORBIDDEN,
         )
