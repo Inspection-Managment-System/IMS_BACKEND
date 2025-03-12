@@ -293,7 +293,42 @@ class IMSReportViewSet(viewsets.ViewSet):
                 "plant_name": "Green Valley Power Plant",
                 "reporting_period": "November 2024",
                 "sections": [
-                ]
+                    {
+                        "section_name": "Operational Efficiency",
+                        "total_output": "150,000 MW",
+                        "operating_hours": "720 hours",
+                        "efficiency": "92%",
+                        "downtime": {
+                            "total_downtime": "12 hours",
+                            "causes": [
+                                {"cause": "Equipment Failure", "duration": "8 hours"},
+                                {
+                                    "cause": "Scheduled Maintenance",
+                                    "duration": "4 hours",
+                                },
+                            ],
+                        },
+                        "recommendations": "Invest in predictive maintenance tools to reduce unplanned downtime.",
+                    },
+                    {
+                        "section_name": "Maintenance Activities",
+                        "total_maintenance_tasks": 45,
+                        "completed_tasks": 42,
+                        "overdue_tasks": 3,
+                        "cost_analysis": {
+                            "labor_costs": "$10,000",
+                            "parts_costs": "$8,500",
+                            "total_costs": "$18,500",
+                        },
+                        "recommendations": "Streamline task scheduling to prevent delays in critical maintenance.",
+                    },
+                    {
+                        "section_name": "Environmental Compliance",
+                        "emission_levels": "Within regulatory limits",
+                        "energy_consumption": "1,500,000 kWh",
+                        "recommendations": "Optimize boiler efficiency to reduce fuel consumption.",
+                    },
+                ],
             }
 
             AuditHistory.objects.create(
@@ -310,6 +345,45 @@ class IMSReportViewSet(viewsets.ViewSet):
         try:
             data = {
                 "report_name": "Quarterly Well Performance Analysis",
+                "generated_on": "2024-12-08",
+                "company_name": "Alpha Energy",
+                "reporting_period": "Q3 2024",
+                "total_wells": 50,
+                "sections": [
+                    {
+                        "section_name": "Production Overview",
+                        "total_production": "3,000,000 barrels",
+                        "average_production_per_well": "60,000 barrels",
+                        "non_operational_wells": 5,
+                        "recommendations": "Reassess the production strategy for underperforming wells.",
+                    },
+                    {
+                        "section_name": "Incident Reports",
+                        "incidents": [
+                            {
+                                "date": "2024-08-15",
+                                "type": "Oil Leak",
+                                "impact": "Minor",
+                                "resolution_time": "6 hours",
+                            },
+                            {
+                                "date": "2024-09-20",
+                                "type": "Valve Failure",
+                                "impact": "Moderate",
+                                "resolution_time": "12 hours",
+                            },
+                        ],
+                        "recommendations": "Upgrade equipment monitoring systems to reduce incidents.",
+                    },
+                    {
+                        "section_name": "Environmental Compliance",
+                        "compliance_rate": "98%",
+                        "violations": [
+                            {"violation": "Excess flaring", "fine": "$5,000"}
+                        ],
+                        "recommendations": "Implement stricter emission control measures.",
+                    },
+                ],
             }
 
             AuditHistory.objects.create(
@@ -326,6 +400,35 @@ class IMSReportViewSet(viewsets.ViewSet):
         try:
             data = {
                 "report_name": "Weekly Quality Assurance Summary",
+                "generated_on": "2024-12-08",
+                "factory_name": "Pinnacle Manufacturing",
+                "reporting_period": "Week of December 1, 2024",
+                "sections": [
+                    {
+                        "section_name": "Production Output",
+                        "total_units_produced": 10000,
+                        "defective_units": 250,
+                        "defect_rate": "2.5%",
+                        "top_defect_causes": [
+                            {"cause": "Machine Misalignment", "percentage": "50%"},
+                            {"cause": "Raw Material Quality", "percentage": "30%"},
+                        ],
+                        "recommendations": "Enhance material quality checks and conduct equipment recalibration.",
+                    },
+                    {
+                        "section_name": "Compliance Status",
+                        "inspections_conducted": 5,
+                        "compliance_rate": "100%",
+                        "recommendations": "Continue adhering to ISO 9001 standards.",
+                    },
+                    {
+                        "section_name": "Employee Training",
+                        "trained_employees": 120,
+                        "total_employees": 150,
+                        "training_compliance": "80%",
+                        "recommendations": "Expand training programs to cover 100% of the workforce.",
+                    },
+                ],
             }
 
             AuditHistory.objects.create(
@@ -342,6 +445,43 @@ class IMSReportViewSet(viewsets.ViewSet):
         try:
             data = {
                 "report_name": "Monthly Construction Progress Report",
+                "generated_on": "2024-12-08",
+                "project_name": "Downtown Skyscraper Project",
+                "reporting_period": "November 2024",
+                "sections": [
+                    {
+                        "section_name": "Progress Summary",
+                        "completion_percentage": "75%",
+                        "tasks_completed": 150,
+                        "tasks_remaining": 50,
+                        "recommendations": "Allocate additional resources to accelerate structural work.",
+                    },
+                    {
+                        "section_name": "Budget Analysis",
+                        "total_budget": "$50,000,000",
+                        "spent_to_date": "$38,000,000",
+                        "remaining_budget": "$12,000,000",
+                        "overruns": "$1,500,000",
+                        "recommendations": "Tighten procurement processes to minimize cost overruns.",
+                    },
+                    {
+                        "section_name": "Safety Incidents",
+                        "incidents_reported": 2,
+                        "details": [
+                            {
+                                "date": "2024-11-12",
+                                "type": "Fall Injury",
+                                "severity": "Moderate",
+                            },
+                            {
+                                "date": "2024-11-20",
+                                "type": "Equipment Malfunction",
+                                "severity": "Minor",
+                            },
+                        ],
+                        "recommendations": "Conduct additional safety drills and equipment inspections.",
+                    },
+                ],
             }
 
             AuditHistory.objects.create(
@@ -358,6 +498,37 @@ class IMSReportViewSet(viewsets.ViewSet):
         try:
             data = {
                 "report_name": "Monthly Hospital Equipment Utilization",
+                "generated_on": "2024-12-08",
+                "hospital_name": "City General Hospital",
+                "reporting_period": "November 2024",
+                "sections": [
+                    {
+                        "section_name": "Equipment Utilization",
+                        "total_equipment": 200,
+                        "utilization_rate": "85%",
+                        "underutilized_equipment": 15,
+                        "recommendations": "Relocate underutilized equipment to high-demand departments.",
+                    },
+                    {
+                        "section_name": "Maintenance Overview",
+                        "scheduled_maintenance": 30,
+                        "completed_maintenance": 28,
+                        "pending_maintenance": 2,
+                        "recommendations": "Streamline vendor coordination to ensure timely maintenance.",
+                    },
+                    {
+                        "section_name": "Critical Incidents",
+                        "incidents_reported": 1,
+                        "details": [
+                            {
+                                "date": "2024-11-15",
+                                "type": "Ventilator Failure",
+                                "impact": "Critical",
+                            }
+                        ],
+                        "recommendations": "Upgrade ventilator monitoring systems to avoid future incidents.",
+                    },
+                ],
             }
 
             AuditHistory.objects.create(
