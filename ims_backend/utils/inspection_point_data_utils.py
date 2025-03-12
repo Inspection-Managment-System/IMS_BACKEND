@@ -23,10 +23,10 @@ def sort_evinces_by_distance(evinces, user_location):
     try:
         evinces_with_distance = [
             {
-                **format_inspection_point(evince),
-                "distance": geodesic_distance(
-                    user_lat, user_lon, evince.latitude, evince.longitude
+                **format_inspection_point(
+                    evince, geodesic_distance(user_lat, user_lon, evince)
                 ),
+                "distance": geodesic_distance(user_lat, user_lon, evince),
             }
             for evince in evinces
         ]

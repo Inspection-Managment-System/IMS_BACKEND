@@ -1,5 +1,6 @@
 from django.utils.decorators import method_decorator
 from rest_framework import permissions, viewsets
+
 from api.serializers import TicketSerializer
 from inspection_management.models import Ticket
 from users.authorization import role_required
