@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from api.serializers import ComapnyGetSerializer, ComapnySerializer
 from inspection_management.models import Company, DataGroup
 from users.authorization import role_required
+from users.models.audit_history import AuditHistory
 
 
 @method_decorator(
@@ -29,11 +30,20 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        company = self.perform_create(serializer)
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Created company: {company.id} - {company.name}"
+        )
+
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+    def perform_create(self, serializer):
+        return serializer.save()
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -43,8 +53,30 @@ class CompanyViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        updated_company = self.perform_update(serializer)
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Updated company: {updated_company.id} - {updated_company.name}"
+        )
+
         return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        return serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        company_id = instance.id
+        company_name = instance.name
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Deleted company: {company_id} - {company_name}"
+        )
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def preprocess_data(self, data):
 

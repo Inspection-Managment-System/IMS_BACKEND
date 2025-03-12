@@ -6,6 +6,7 @@ from api.serializers import BusinessUnitSerializer
 from ims_backend.utils.helper import get_related_business_units_from_site
 from inspection_management.models import BusinessUnit, Site
 from users.authorization import role_required
+from users.models.audit_history import AuditHistory
 
 
 @method_decorator(
@@ -29,11 +30,20 @@ class BusinessUnitViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        business_unit = self.perform_create(serializer)
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Created business unit: {business_unit.id} - {business_unit.name}"
+        )
+
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+    def perform_create(self, serializer):
+        return serializer.save()
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -43,8 +53,30 @@ class BusinessUnitViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        updated_unit = self.perform_update(serializer)
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Updated business unit: {updated_unit.id} - {updated_unit.name}"
+        )
+
         return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        return serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        unit_id = instance.id
+        unit_name = instance.name
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Deleted business unit: {unit_id} - {unit_name}"
+        )
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def preprocess_data(self, data):
 

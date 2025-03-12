@@ -6,6 +6,7 @@ from api.serializers import ParameterSerializer
 from inspection_management.models import (AnalysisType, DataGroup,
                                           InspectionAnalysis, Parameter, Unit)
 from users.authorization import role_required
+from users.models.audit_history import AuditHistory
 
 
 @method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
@@ -20,11 +21,20 @@ class ParameterViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        instance = self.perform_create(serializer)
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Created parameter: {instance.name}"
+        )
+
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+    def perform_create(self, serializer):
+        return serializer.save()
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -35,7 +45,23 @@ class ParameterViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Updated parameter: {instance.name}"
+        )
+
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        parameter_name = instance.name
+
+        AuditHistory.objects.create(
+            user=self.request.user,
+            action=f"Deleted parameter: {parameter_name}"
+        )
+
+        instance.delete()
 
     def preprocess_data(self, data):
 

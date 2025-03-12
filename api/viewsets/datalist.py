@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from api.serializers import DataListSerializer
 from inspection_management.models import DataList
 from users.authorization import role_required
+from users.models.audit_history import AuditHistory
 
 
 @method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
@@ -32,12 +33,46 @@ class DataListViewSet(viewsets.ModelViewSet):
         return Response(response_data[0])
 
     def create(self, request, *args, **kwargs):
-        return self._handle_create_or_update(request, partial=False)
+        result = self._handle_create_or_update(request, partial=False)
+
+        datalist_id = result.data.get('id')
+        datalist_name = result.data.get('name', 'Unknown')
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Created data list: {datalist_id} - {datalist_name}"
+        )
+
+        return result
 
     def update(self, request, *args, **kwargs):
-        return self._handle_create_or_update(
+        instance = self.get_object()
+        datalist_id = instance.id
+        datalist_name = instance.name
+
+        result = self._handle_create_or_update(
             request, partial=kwargs.pop("partial", False)
         )
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Updated data list: {datalist_id} - {datalist_name}"
+        )
+
+        return result
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        datalist_id = instance.id
+        datalist_name = instance.name
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Deleted data list: {datalist_id} - {datalist_name}"
+        )
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _handle_create_or_update(self, request, partial):
         data = self.preprocess_data(request.data.copy())

@@ -6,6 +6,7 @@ from api.serializers import PlannerSerializer
 from inspection_management.models import (BusinessUnit, InspectionAnalysis,
                                           InspectionPoint, Planner)
 from users.authorization import role_required
+from users.models.audit_history import AuditHistory
 
 
 @method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
@@ -22,6 +23,12 @@ class PlannerViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         serializer.instance.save()
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Created planner: {serializer.instance.id}"
+        )
+
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
@@ -29,17 +36,30 @@ class PlannerViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
-
         instance = self.get_object()
-
         data = self.preprocess_data(data)
 
         partial = kwargs.pop("partial", False)
-        instance = self.get_object()
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Updated planner: {instance.id}"
+        )
+
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        planner_id = instance.id
+
+        AuditHistory.objects.create(
+            user=self.request.user,
+            action=f"Deleted planner: {planner_id}"
+        )
+
+        instance.delete()
 
     def preprocess_data(self, data):
         if "month" in data:
