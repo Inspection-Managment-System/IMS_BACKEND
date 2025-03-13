@@ -15,6 +15,7 @@ from ims_backend.utils.inspection_point_data_utils import (
 from inspection_management.models import DataGroup, Evince
 from users.authorization import role_required
 from users.models import User, UserProfile
+from users.models.audit_history import AuditHistory
 
 
 @method_decorator(
@@ -73,7 +74,19 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return super().list(request, *args, **kwargs)
 
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+
+        if response.status_code == status.HTTP_201_CREATED:
+            AuditHistory.objects.create(
+                user=request.user, action=f"Created user: {response.data['username']}"
+            )
+
+        return response
+
     def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        original_username = instance.username
 
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
@@ -87,9 +100,22 @@ class UserViewSet(viewsets.ModelViewSet):
                 self.update_user_profile(instance.userprofile, user_profile_data)
                 self.update_user(instance, user_data, partial)
 
+                AuditHistory.objects.create(
+                    user=request.user, action=f"Updated user: {original_username}"
+                )
+
                 return Response(self.get_serializer(instance).data)
         except (Group.DoesNotExist, DataGroup.DoesNotExist) as e:
             raise ValidationError({"detail": str(e)})
+
+    def perform_destroy(self, instance):
+        username = instance.username
+
+        AuditHistory.objects.create(
+            user=self.request.user, action=f"Deleted user: {username}"
+        )
+
+        instance.delete()
 
     def update_user_profile(self, user_profile, data):
         updated = False
@@ -151,6 +177,11 @@ class UserViewSet(viewsets.ModelViewSet):
 
         user.userprofile.shift = shift
         user.userprofile.save()
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Assigned shift '{shift}' to user: {user.username}",
+        )
 
         return Response(
             {"message": f"Shift '{shift}' assigned successfully."},

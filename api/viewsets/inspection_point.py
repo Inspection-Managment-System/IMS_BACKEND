@@ -9,6 +9,8 @@ from ims_backend.utils.helper import \
     get_related_inspection_points_from_business_unit
 from inspection_management.models import BusinessUnit, InspectionPoint
 from users.authorization import role_required
+from users.models.audit_history import AuditHistory
+from users.models.notification import Notification
 
 
 @method_decorator(
@@ -34,11 +36,20 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        inspection_point = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
+
+        AuditHistory.objects.create(
+            user=self.request.user,
+            action=f"Created inspection point: {inspection_point.id} - {inspection_point.name}",
+        )
+
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+    def perform_create(self, serializer):
+        return serializer.save()
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -46,13 +57,40 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
 
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
+        original_name = instance.name
+        original_business_unit_id = (
+            instance.business_unit.id if instance.business_unit else None
+        )
+
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        updated_inspection_point = self.perform_update(serializer)
+
+        AuditHistory.objects.create(
+            user=self.request.user,
+            action=f"Updated inspection point: {updated_inspection_point.id} - {updated_inspection_point.name}",
+        )
+
         return Response(serializer.data)
 
-    def preprocess_data(self, data):
+    def perform_update(self, serializer):
+        return serializer.save()
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        inspection_point_id = instance.id
+        inspection_point_name = instance.name
+        business_unit = instance.business_unit
+
+        AuditHistory.objects.create(
+            user=self.request.user,
+            action=f"Deleted inspection point: {inspection_point_id} - {inspection_point_name}",
+        )
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def preprocess_data(self, data):
         if "name" in data:
             data["name"] = data["name"].lower()
         if "business_unit" in data:
@@ -81,6 +119,7 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
                 flammability, health_risk, reactivity
             )
         )
+
         return Response(
             {"overall_hazard_level": overall_hazard_level}, status=status.HTTP_200_OK
         )
@@ -106,6 +145,7 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
         is_user_at_location = geodesic_algo.is_user_at_location(
             target_coords, user_coords, 50
         )
+
         return Response(
             {"is_user_at_location": is_user_at_location}, status=status.HTTP_200_OK
         )
