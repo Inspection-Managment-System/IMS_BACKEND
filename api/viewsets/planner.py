@@ -25,8 +25,7 @@ class PlannerViewSet(viewsets.ModelViewSet):
         serializer.instance.save()
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Created planner: {serializer.instance.id}"
+            user=request.user, action=f"Created planner: {serializer.instance.id}"
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -45,8 +44,7 @@ class PlannerViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Updated planner: {instance.id}"
+            user=request.user, action=f"Updated planner: {instance.id}"
         )
 
         return Response(serializer.data)
@@ -55,8 +53,7 @@ class PlannerViewSet(viewsets.ModelViewSet):
         planner_id = instance.id
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Deleted planner: {planner_id}"
+            user=self.request.user, action=f"Deleted planner: {planner_id}"
         )
 
         instance.delete()

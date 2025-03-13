@@ -23,8 +23,7 @@ class UnitViewSet(viewsets.ModelViewSet):
         instance = self.perform_create(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Created unit: {instance.name}"
+            user=request.user, action=f"Created unit: {instance.name}"
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -46,8 +45,7 @@ class UnitViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Updated unit: {instance.name}"
+            user=request.user, action=f"Updated unit: {instance.name}"
         )
 
         return Response(serializer.data)
@@ -56,8 +54,7 @@ class UnitViewSet(viewsets.ModelViewSet):
         unit_name = instance.name
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Deleted unit: {unit_name}"
+            user=self.request.user, action=f"Deleted unit: {unit_name}"
         )
 
         instance.delete()

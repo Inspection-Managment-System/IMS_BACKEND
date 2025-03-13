@@ -79,8 +79,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if response.status_code == status.HTTP_201_CREATED:
             AuditHistory.objects.create(
-                user=request.user,
-                action=f"Created user: {response.data['username']}"
+                user=request.user, action=f"Created user: {response.data['username']}"
             )
 
         return response
@@ -102,8 +101,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 self.update_user(instance, user_data, partial)
 
                 AuditHistory.objects.create(
-                    user=request.user,
-                    action=f"Updated user: {original_username}"
+                    user=request.user, action=f"Updated user: {original_username}"
                 )
 
                 return Response(self.get_serializer(instance).data)
@@ -114,8 +112,7 @@ class UserViewSet(viewsets.ModelViewSet):
         username = instance.username
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Deleted user: {username}"
+            user=self.request.user, action=f"Deleted user: {username}"
         )
 
         instance.delete()
@@ -183,7 +180,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Assigned shift '{shift}' to user: {user.username}"
+            action=f"Assigned shift '{shift}' to user: {user.username}",
         )
 
         return Response(

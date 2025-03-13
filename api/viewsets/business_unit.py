@@ -34,7 +34,7 @@ class BusinessUnitViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Created business unit: {business_unit.id} - {business_unit.name}"
+            action=f"Created business unit: {business_unit.id} - {business_unit.name}",
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -57,7 +57,7 @@ class BusinessUnitViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Updated business unit: {updated_unit.id} - {updated_unit.name}"
+            action=f"Updated business unit: {updated_unit.id} - {updated_unit.name}",
         )
 
         return Response(serializer.data)
@@ -71,8 +71,7 @@ class BusinessUnitViewSet(viewsets.ModelViewSet):
         unit_name = instance.name
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Deleted business unit: {unit_id} - {unit_name}"
+            user=request.user, action=f"Deleted business unit: {unit_id} - {unit_name}"
         )
 
         self.perform_destroy(instance)

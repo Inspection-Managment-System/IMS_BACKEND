@@ -41,7 +41,7 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=self.request.user,
-            action=f"Created inspection point: {inspection_point.id} - {inspection_point.name}"
+            action=f"Created inspection point: {inspection_point.id} - {inspection_point.name}",
         )
 
         return Response(
@@ -58,7 +58,9 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         original_name = instance.name
-        original_business_unit_id = instance.business_unit.id if instance.business_unit else None
+        original_business_unit_id = (
+            instance.business_unit.id if instance.business_unit else None
+        )
 
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -66,7 +68,7 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=self.request.user,
-            action=f"Updated inspection point: {updated_inspection_point.id} - {updated_inspection_point.name}"
+            action=f"Updated inspection point: {updated_inspection_point.id} - {updated_inspection_point.name}",
         )
 
         return Response(serializer.data)
@@ -82,7 +84,7 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=self.request.user,
-            action=f"Deleted inspection point: {inspection_point_id} - {inspection_point_name}"
+            action=f"Deleted inspection point: {inspection_point_id} - {inspection_point_name}",
         )
 
         self.perform_destroy(instance)

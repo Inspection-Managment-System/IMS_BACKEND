@@ -33,8 +33,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
         company = self.perform_create(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Created company: {company.id} - {company.name}"
+            user=request.user, action=f"Created company: {company.id} - {company.name}"
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -57,7 +56,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Updated company: {updated_company.id} - {updated_company.name}"
+            action=f"Updated company: {updated_company.id} - {updated_company.name}",
         )
 
         return Response(serializer.data)
@@ -71,8 +70,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
         company_name = instance.name
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Deleted company: {company_id} - {company_name}"
+            user=request.user, action=f"Deleted company: {company_id} - {company_name}"
         )
 
         self.perform_destroy(instance)

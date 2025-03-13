@@ -23,8 +23,7 @@ class LocationViewSet(viewsets.ModelViewSet):
         instance = self.perform_create(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Created location: {instance.name}"
+            user=request.user, action=f"Created location: {instance.name}"
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -46,8 +45,7 @@ class LocationViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Updated location: {instance.name}"
+            user=request.user, action=f"Updated location: {instance.name}"
         )
 
         return Response(serializer.data)
@@ -56,8 +54,7 @@ class LocationViewSet(viewsets.ModelViewSet):
         location_name = instance.name
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Deleted location: {location_name}"
+            user=self.request.user, action=f"Deleted location: {location_name}"
         )
 
         instance.delete()

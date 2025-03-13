@@ -24,8 +24,7 @@ class ParameterViewSet(viewsets.ModelViewSet):
         instance = self.perform_create(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Created parameter: {instance.name}"
+            user=request.user, action=f"Created parameter: {instance.name}"
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -47,8 +46,7 @@ class ParameterViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Updated parameter: {instance.name}"
+            user=request.user, action=f"Updated parameter: {instance.name}"
         )
 
         return Response(serializer.data)
@@ -57,8 +55,7 @@ class ParameterViewSet(viewsets.ModelViewSet):
         parameter_name = instance.name
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Deleted parameter: {parameter_name}"
+            user=self.request.user, action=f"Deleted parameter: {parameter_name}"
         )
 
         instance.delete()

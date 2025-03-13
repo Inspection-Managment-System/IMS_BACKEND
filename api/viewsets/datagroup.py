@@ -24,7 +24,7 @@ class DatagroupViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Created data group: {datagroup.id} - {datagroup.name}"
+            action=f"Created data group: {datagroup.id} - {datagroup.name}",
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -47,7 +47,7 @@ class DatagroupViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Updated data group: {updated_group.id} - {updated_group.name}"
+            action=f"Updated data group: {updated_group.id} - {updated_group.name}",
         )
 
         return Response(serializer.data)
@@ -61,8 +61,7 @@ class DatagroupViewSet(viewsets.ModelViewSet):
         group_name = instance.name
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Deleted data group: {group_id} - {group_name}"
+            user=request.user, action=f"Deleted data group: {group_id} - {group_name}"
         )
 
         self.perform_destroy(instance)

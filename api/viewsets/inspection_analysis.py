@@ -9,9 +9,9 @@ from ims_backend.utils.helper import \
 from inspection_management.models import (AnalysisType, DataGroup, Equipment,
                                           InspectionAnalysis, Location)
 from users.authorization import role_required
+from users.models import User
 from users.models.audit_history import AuditHistory
 from users.models.notification import Notification
-from users.models import User
 
 
 @method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
@@ -44,7 +44,7 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Created inspection analysis: {serializer.instance.name}"
+            action=f"Created inspection analysis: {serializer.instance.name}",
         )
 
     def update(self, request, *args, **kwargs):
@@ -62,7 +62,7 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Updated inspection analysis: {original_name} → {serializer.instance.name}"
+            action=f"Updated inspection analysis: {original_name} → {serializer.instance.name}",
         )
 
         if original_name != serializer.instance.name:
@@ -74,7 +74,7 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
                         Notification.objects.create(
                             sender=request.user,
                             recipient=inspector,
-                            content=f"Inspection analysis '{original_name}' has been renamed to '{serializer.instance.name}'."
+                            content=f"Inspection analysis '{original_name}' has been renamed to '{serializer.instance.name}'.",
                         )
             except Exception as e:
                 print(f"Error sending inspector notifications: {str(e)}")
@@ -86,7 +86,7 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=self.request.user,
-            action=f"Deleted inspection analysis: {analysis_name}"
+            action=f"Deleted inspection analysis: {analysis_name}",
         )
 
         instance.delete()

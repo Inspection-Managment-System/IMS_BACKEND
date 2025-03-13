@@ -29,12 +29,12 @@ class TicketViewSet(viewsets.ModelViewSet):
         ticket = serializer.save(opened_by=self.request.user)
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Created ticket: {ticket.id}"
+            user=self.request.user, action=f"Created ticket: {ticket.id}"
         )
 
         try:
             from users.models import User, UserProfile
+
             admin_users = User.objects.filter(userprofile__role__name="Admin")
 
             for admin in admin_users:
@@ -42,7 +42,7 @@ class TicketViewSet(viewsets.ModelViewSet):
                     Notification.objects.create(
                         sender=self.request.user,
                         recipient=admin,
-                        content=f"New ticket #{ticket.id} has been created by {self.request.user.username}."
+                        content=f"New ticket #{ticket.id} has been created by {self.request.user.username}.",
                     )
         except Exception as e:
             print(f"Error sending admin notifications: {str(e)}")
@@ -52,15 +52,14 @@ class TicketViewSet(viewsets.ModelViewSet):
         updated_ticket = serializer.save()
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Updated ticket: {updated_ticket.id}"
+            user=self.request.user, action=f"Updated ticket: {updated_ticket.id}"
         )
 
         if original_ticket.opened_by != self.request.user:
             Notification.objects.create(
                 sender=self.request.user,
                 recipient=original_ticket.opened_by,
-                content=f"Your ticket #{updated_ticket.id} has been updated."
+                content=f"Your ticket #{updated_ticket.id} has been updated.",
             )
 
     def perform_destroy(self, instance):
@@ -68,15 +67,14 @@ class TicketViewSet(viewsets.ModelViewSet):
         ticket_owner = instance.opened_by
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Deleted ticket: {ticket_id}"
+            user=self.request.user, action=f"Deleted ticket: {ticket_id}"
         )
 
         if ticket_owner != self.request.user:
             Notification.objects.create(
                 sender=self.request.user,
                 recipient=ticket_owner,
-                content=f"Your ticket #{ticket_id} has been deleted."
+                content=f"Your ticket #{ticket_id} has been deleted.",
             )
 
         instance.delete()

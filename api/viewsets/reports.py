@@ -30,8 +30,7 @@ class IMSReportViewSet(viewsets.ViewSet):
             summary_data = fetch_summary_report()
 
             AuditHistory.objects.create(
-                user=request.user,
-                action="Generated summary report"
+                user=request.user, action="Generated summary report"
             )
 
             return Response(summary_data)
@@ -51,7 +50,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Retrieved evince summary for business unit: {business_unit_id}, period: {start_date} to {end_date}"
+                action=f"Retrieved evince summary for business unit: {business_unit_id}, period: {start_date} to {end_date}",
             )
 
             return Response({"business_units": business_unit_data})
@@ -67,7 +66,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Generated facility functionality report for period: {start_date} to {end_date}"
+            action=f"Generated facility functionality report for period: {start_date} to {end_date}",
         )
 
         return Response({"facility_summary": report_data})
@@ -83,8 +82,7 @@ class IMSReportViewSet(viewsets.ViewSet):
             inspectors = get_inspectors_list(manager_id)
 
             AuditHistory.objects.create(
-                user=request.user,
-                action=f"Listed inspectors for manager: {manager_id}"
+                user=request.user, action=f"Listed inspectors for manager: {manager_id}"
             )
 
             return Response(inspectors, status=200)
@@ -105,7 +103,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Generated performance report for inspector: {user}, period: {start_date} to {end_date}"
+                action=f"Generated performance report for inspector: {user}, period: {start_date} to {end_date}",
             )
 
             return Response(performance_data)
@@ -124,7 +122,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Generated analysis type report for period: {start_date} to {end_date}"
+                action=f"Generated analysis type report for period: {start_date} to {end_date}",
             )
 
             return Response(report_data)
@@ -148,7 +146,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Generated inspection result trend report for period: {start_date} to {end_date}"
+                action=f"Generated inspection result trend report for period: {start_date} to {end_date}",
             )
 
             return Response(report_data)
@@ -167,7 +165,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Retrieved business units and evinces data for business unit: {business_unit_id}"
+                action=f"Retrieved business units and evinces data for business unit: {business_unit_id}",
             )
 
             return Response(data)
@@ -190,7 +188,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Generated certificate of inspection for evince: {evince_id}, period: {start_date} to {end_date}"
+                action=f"Generated certificate of inspection for evince: {evince_id}, period: {start_date} to {end_date}",
             )
 
             return Response(data)
@@ -211,7 +209,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
                 AuditHistory.objects.create(
                     user=request.user,
-                    action=f"Retrieved details for evince: {evince_id}"
+                    action=f"Retrieved details for evince: {evince_id}",
                 )
 
                 return Response({"evince_details": data})
@@ -223,7 +221,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Retrieved overdue evinces for inspector: {inspector_id}, business unit: {business_unit_id}"
+                action=f"Retrieved overdue evinces for inspector: {inspector_id}, business unit: {business_unit_id}",
             )
 
             return Response({"overdue_evinces": data})
@@ -240,7 +238,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Retrieved all equipment data for user: {user_id}"
+                action=f"Retrieved all equipment data for user: {user_id}",
             )
 
             return Response({"equipment": data})
@@ -257,7 +255,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Retrieved equipment requiring calibration for user: {user_id}"
+                action=f"Retrieved equipment requiring calibration for user: {user_id}",
             )
 
             return Response({"equipment": data})
@@ -277,7 +275,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action=f"Retrieved single equipment report for user: {user_id}, equipment: {equipment_id}"
+                action=f"Retrieved single equipment report for user: {user_id}, equipment: {equipment_id}",
             )
 
             return Response({"equipment_details": data})
@@ -332,8 +330,7 @@ class IMSReportViewSet(viewsets.ViewSet):
             }
 
             AuditHistory.objects.create(
-                user=request.user,
-                action="Generated plant performance report"
+                user=request.user, action="Generated plant performance report"
             )
 
             return Response({"report": data})
@@ -387,8 +384,7 @@ class IMSReportViewSet(viewsets.ViewSet):
             }
 
             AuditHistory.objects.create(
-                user=request.user,
-                action="Generated oil and gas performance report"
+                user=request.user, action="Generated oil and gas performance report"
             )
 
             return Response({"report": data})
@@ -432,8 +428,7 @@ class IMSReportViewSet(viewsets.ViewSet):
             }
 
             AuditHistory.objects.create(
-                user=request.user,
-                action="Generated factory quality assurance report"
+                user=request.user, action="Generated factory quality assurance report"
             )
 
             return Response({"report": data})
@@ -485,8 +480,7 @@ class IMSReportViewSet(viewsets.ViewSet):
             }
 
             AuditHistory.objects.create(
-                user=request.user,
-                action="Generated construction progress report"
+                user=request.user, action="Generated construction progress report"
             )
 
             return Response({"report": data})
@@ -533,7 +527,7 @@ class IMSReportViewSet(viewsets.ViewSet):
 
             AuditHistory.objects.create(
                 user=request.user,
-                action="Generated hospital equipment utilization report"
+                action="Generated hospital equipment utilization report",
             )
 
             return Response({"report": data})

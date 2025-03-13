@@ -136,22 +136,27 @@ class EvinceViewSet(viewsets.ModelViewSet):
         self.create_inspection_tests_and_results(serializer.instance, is_update=False)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Created evince #{serializer.instance.id}"
+            user=request.user, action=f"Created evince #{serializer.instance.id}"
         )
 
-        if serializer.instance.assigned_to and serializer.instance.assigned_to != request.user:
+        if (
+            serializer.instance.assigned_to
+            and serializer.instance.assigned_to != request.user
+        ):
             Notification.objects.create(
                 sender=request.user,
                 recipient=serializer.instance.assigned_to,
-                content=f"You have been assigned to evince #{serializer.instance.id}."
+                content=f"You have been assigned to evince #{serializer.instance.id}.",
             )
 
-        if serializer.instance.reviewed_by and serializer.instance.reviewed_by != request.user:
+        if (
+            serializer.instance.reviewed_by
+            and serializer.instance.reviewed_by != request.user
+        ):
             Notification.objects.create(
                 sender=request.user,
                 recipient=serializer.instance.reviewed_by,
-                content=f"You have been assigned as reviewer for evince #{serializer.instance.id}."
+                content=f"You have been assigned as reviewer for evince #{serializer.instance.id}.",
             )
 
         headers = self.get_success_headers(serializer.data)
@@ -192,22 +197,27 @@ class EvinceViewSet(viewsets.ModelViewSet):
         self.create_inspection_tests_and_results(serializer.instance, is_update=True)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Updated evince #{serializer.instance.id}"
+            user=request.user, action=f"Updated evince #{serializer.instance.id}"
         )
 
-        if original_assigned_to != serializer.instance.assigned_to and serializer.instance.assigned_to:
+        if (
+            original_assigned_to != serializer.instance.assigned_to
+            and serializer.instance.assigned_to
+        ):
             Notification.objects.create(
                 sender=request.user,
                 recipient=serializer.instance.assigned_to,
-                content=f"You have been assigned to evince #{serializer.instance.id}."
+                content=f"You have been assigned to evince #{serializer.instance.id}.",
             )
 
-        if original_reviewed_by != serializer.instance.reviewed_by and serializer.instance.reviewed_by:
+        if (
+            original_reviewed_by != serializer.instance.reviewed_by
+            and serializer.instance.reviewed_by
+        ):
             Notification.objects.create(
                 sender=request.user,
                 recipient=serializer.instance.reviewed_by,
-                content=f"You have been assigned as reviewer for evince #{serializer.instance.id}."
+                content=f"You have been assigned as reviewer for evince #{serializer.instance.id}.",
             )
 
         return Response(serializer.data)
@@ -216,22 +226,21 @@ class EvinceViewSet(viewsets.ModelViewSet):
         evince_id = instance.id
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Deleted evince #{evince_id}"
+            user=self.request.user, action=f"Deleted evince #{evince_id}"
         )
 
         if instance.assigned_to and instance.assigned_to != self.request.user:
             Notification.objects.create(
                 sender=self.request.user,
                 recipient=instance.assigned_to,
-                content=f"Evince #{evince_id} that was assigned to you has been deleted."
+                content=f"Evince #{evince_id} that was assigned to you has been deleted.",
             )
 
         if instance.reviewed_by and instance.reviewed_by != self.request.user:
             Notification.objects.create(
                 sender=self.request.user,
                 recipient=instance.reviewed_by,
-                content=f"Evince #{evince_id} that you were reviewing has been deleted."
+                content=f"Evince #{evince_id} that you were reviewing has been deleted.",
             )
 
         instance.delete()
@@ -302,10 +311,12 @@ class EvinceViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Updated evince #{evince.id} status from {old_status} to {status_to_update}"
+            action=f"Updated evince #{evince.id} status from {old_status} to {status_to_update}",
         )
 
-        self.send_status_update_notifications(evince, old_status, status_to_update, request.user)
+        self.send_status_update_notifications(
+            evince, old_status, status_to_update, request.user
+        )
 
         return Response(
             {"message": f"Evince status updated to {status_to_update}."},
@@ -319,7 +330,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
                 Notification.objects.create(
                     sender=user,
                     recipient=evince.reviewed_by,
-                    content=f"Results have been entered for evince #{evince.id} and are ready for your review."
+                    content=f"Results have been entered for evince #{evince.id} and are ready for your review.",
                 )
 
         elif new_status == "Rejected":
@@ -327,7 +338,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
                 Notification.objects.create(
                     sender=user,
                     recipient=evince.assigned_to,
-                    content=f"Evince #{evince.id} has been rejected and requires your attention."
+                    content=f"Evince #{evince.id} has been rejected and requires your attention.",
                 )
 
         elif new_status == "Reassigned":
@@ -335,7 +346,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
                 Notification.objects.create(
                     sender=user,
                     recipient=evince.assigned_to,
-                    content=f"Evince #{evince.id} has been reassigned to you and requires your attention."
+                    content=f"Evince #{evince.id} has been reassigned to you and requires your attention.",
                 )
 
         elif new_status == "Approved":
@@ -343,7 +354,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
                 Notification.objects.create(
                     sender=user,
                     recipient=evince.assigned_to,
-                    content=f"Evince #{evince.id} has been approved. Good job!"
+                    content=f"Evince #{evince.id} has been approved. Good job!",
                 )
 
     def handle_status_update(self, evince, status_to_update):

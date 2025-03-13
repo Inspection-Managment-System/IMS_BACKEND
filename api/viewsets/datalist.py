@@ -35,12 +35,12 @@ class DataListViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         result = self._handle_create_or_update(request, partial=False)
 
-        datalist_id = result.data.get('id')
-        datalist_name = result.data.get('name', 'Unknown')
+        datalist_id = result.data.get("id")
+        datalist_name = result.data.get("name", "Unknown")
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Created data list: {datalist_id} - {datalist_name}"
+            action=f"Created data list: {datalist_id} - {datalist_name}",
         )
 
         return result
@@ -56,7 +56,7 @@ class DataListViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Updated data list: {datalist_id} - {datalist_name}"
+            action=f"Updated data list: {datalist_id} - {datalist_name}",
         )
 
         return result
@@ -68,7 +68,7 @@ class DataListViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Deleted data list: {datalist_id} - {datalist_name}"
+            action=f"Deleted data list: {datalist_id} - {datalist_name}",
         )
 
         self.perform_destroy(instance)

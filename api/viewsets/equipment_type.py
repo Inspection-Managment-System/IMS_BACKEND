@@ -24,7 +24,7 @@ class EquipmentTypeViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Created equipment type: {equipment_type.id} - {equipment_type.name}"
+            action=f"Created equipment type: {equipment_type.id} - {equipment_type.name}",
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -47,7 +47,7 @@ class EquipmentTypeViewSet(viewsets.ModelViewSet):
 
         AuditHistory.objects.create(
             user=request.user,
-            action=f"Updated equipment type: {updated_type.id} - {updated_type.name}"
+            action=f"Updated equipment type: {updated_type.id} - {updated_type.name}",
         )
 
         return Response(serializer.data)
@@ -61,8 +61,7 @@ class EquipmentTypeViewSet(viewsets.ModelViewSet):
         type_name = instance.name
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Deleted equipment type: {type_id} - {type_name}"
+            user=request.user, action=f"Deleted equipment type: {type_id} - {type_name}"
         )
 
         self.perform_destroy(instance)

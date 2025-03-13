@@ -33,8 +33,7 @@ class SiteViewSet(viewsets.ModelViewSet):
         instance = self.perform_create(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Created site: {instance.name}"
+            user=request.user, action=f"Created site: {instance.name}"
         )
 
         headers = self.get_success_headers(serializer.data)
@@ -55,8 +54,7 @@ class SiteViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         AuditHistory.objects.create(
-            user=request.user,
-            action=f"Updated site: {instance.name}"
+            user=request.user, action=f"Updated site: {instance.name}"
         )
 
         return Response(serializer.data)
@@ -65,8 +63,7 @@ class SiteViewSet(viewsets.ModelViewSet):
         site_name = instance.name
 
         AuditHistory.objects.create(
-            user=self.request.user,
-            action=f"Deleted site: {site_name}"
+            user=self.request.user, action=f"Deleted site: {site_name}"
         )
 
         instance.delete()
