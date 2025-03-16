@@ -3,10 +3,11 @@ from django.urls import path
 
 from api.viewsets import (CreateSuperUserView, CustomLoginView,
                           PasswordChangeAPIView, PasswordResetAPIView,
-                          SignUpView)
+                          ReadEmiratesId, SignUpView)
 
 urlpatterns = [
     path("signup/", SignUpView.as_view(), name="signup"),
+    path("read_emirates_id", ReadEmiratesId.as_view(), name="read_emirates_id"),
     path("create_super_user/", CreateSuperUserView.as_view(), name="create_super_user"),
     path("login/", CustomLoginView.as_view(), name="login"),
     path("password_reset/", PasswordResetAPIView.as_view(), name="password_reset"),

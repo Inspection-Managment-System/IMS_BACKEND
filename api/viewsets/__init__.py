@@ -27,3 +27,4 @@ from .notification import NotificationViewSet
 from .audit_history import AuditHistoryViewSet
 from .password_change import PasswordChangeAPIView
 from .ticket import TicketViewSet
+from .read_emirates_id import ReadEmiratesId

@@ -6,4 +6,5 @@ from . import (
     send_email,
     geodesic_algo,
     inspection_point_data_utils,
+    emirates_id_reader_automation,
 )
