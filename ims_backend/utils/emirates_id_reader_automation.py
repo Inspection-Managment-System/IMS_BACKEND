@@ -18,12 +18,12 @@ def format_raw_text(stream):
     if "<paid version only>" in stream:
         data = stream.split("\r\n")
         return {
-            "First Name": data[0],
-            "Last Name": data[1],
-            "Date of Birth": data[2],
-            "Expiry Date": data[3],
-            "Gender": data[4],
-            "Nationality": data[5],
-            "ID Number": data[6],
+            "first_name": data[0],
+            "last_name": data[1],
+            "date_of_birth": data[2],
+            "card_expiry_date": data[3],
+            "gender": data[4],
+            "nationality": data[5],
+            "emirates_id": data[6],
         }
     return []
