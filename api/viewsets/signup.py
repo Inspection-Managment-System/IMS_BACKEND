@@ -25,10 +25,10 @@ class SignUpView(APIView):
             if user:
                 data_group_names = request.data.get("data_group", [])
                 date_of_birth = request.data.get("date_of_birth", "")
-                expiry_date = request.data.get("expiry_date", "")
+                card_expiry_date = request.data.get("card_expiry_date", "")
                 gender = request.data.get("gender", "")
                 nationality = request.data.get("nationality", "")
-                emirates_id_number = request.data.get("emirates_id_number", "")
+                emirates_id = request.data.get("emirates_id", "")
 
                 data_group_instances = DataGroup.objects.filter(
                     name__in=data_group_names
@@ -44,10 +44,10 @@ class SignUpView(APIView):
                     role=role_instance,
                     profile_picture=profile_picture,
                     date_of_birth=date_of_birth,
-                    card_expiry_date=expiry_date,
+                    card_expiry_date=card_expiry_date,
                     gender=gender,
                     nationality=nationality,
-                    emirates_id=emirates_id_number,
+                    emirates_id=emirates_id,
                 )
                 user_profile.data_groups.set(data_group_instances)
 

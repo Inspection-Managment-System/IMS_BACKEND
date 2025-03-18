@@ -8,7 +8,6 @@ from ims_backend.utils.emirates_id_reader_automation import (
     format_raw_text, get_clipboard_data, open_glass_reader)
 from users.authorization import role_required
 
-
 User = get_user_model()
 
 
