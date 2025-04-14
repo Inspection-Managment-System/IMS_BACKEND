@@ -18,3 +18,4 @@ from .planner import Planner
 from .equipment_type import EquipmentType
 from .datalist import DataList
 from .ticket import Ticket
+from .document import Document

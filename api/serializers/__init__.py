@@ -21,3 +21,4 @@ from .inspection_result import *
 from .notification import *
 from .audit_history import *
 from .ticket import *
+from .document import *
