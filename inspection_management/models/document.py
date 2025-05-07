@@ -15,7 +15,7 @@ class Document(models.Model):
         ("compliance", "Compliance & Regulatory"),
     ]
 
-    file = models.FileField(upload_to="documents/")
+    file = models.TextField(blank=True, null=True)
     name = models.CharField(max_length=255)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     equipment = models.ForeignKey(
