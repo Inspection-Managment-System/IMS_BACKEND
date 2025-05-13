@@ -20,17 +20,27 @@ class DocumentViewSet(viewsets.ModelViewSet):
         data = request.data.copy()
         data = self.preprocess_data(data)
 
+        previous_version_id = data.pop("previous_version", None)
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         instance = self.perform_create(serializer)
+
+        if previous_version_id:
+            try:
+                instance.previous_version_id = int(previous_version_id)
+                instance.save()
+            except (ValueError, Document.DoesNotExist):
+                pass
 
         AuditHistory.objects.create(
             user=request.user, action=f"Created document: {instance.name}"
         )
 
-        headers = self.get_success_headers(serializer.data)
+        response_serializer = self.get_serializer(instance)
+        headers = self.get_success_headers(response_serializer.data)
         return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+            response_serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
 
     def perform_create(self, serializer):
