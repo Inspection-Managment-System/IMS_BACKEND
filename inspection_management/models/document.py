@@ -28,7 +28,14 @@ class Document(models.Model):
     version = models.IntegerField(default=1)
     approved = models.BooleanField(default=False)
     previous_version = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.SET_NULL
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="previous",
+    )
+    next_version = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="next"
     )
 
     class Meta:
