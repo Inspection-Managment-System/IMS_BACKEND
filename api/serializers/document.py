@@ -12,8 +12,6 @@ class DocumentSerializer(serializers.ModelSerializer):
     site = RelatedFieldSerializer(queryset=Site.objects.all(), serializer=SS)
     equipment = RelatedFieldSerializer(queryset=Equipment.objects.all(), serializer=ES)
     uploaded_by = RelatedFieldSerializer(queryset=User.objects.all(), serializer=US)
-    previous_version = serializers.SerializerMethodField()
-    next_version = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
@@ -25,13 +23,3 @@ class DocumentSerializer(serializers.ModelSerializer):
         if view and getattr(view, "action", None) == "list":
             data.pop("file", None)
         return data
-
-    def get_previous_version(self, obj):
-        if obj.previous_version:
-            return DocumentSerializer(obj.previous_version, context=self.context).data
-        return None
-
-    def get_next_version(self, obj):
-        if obj.next_version:
-            return DocumentSerializer(obj.next_version, context=self.context).data
-        return None
