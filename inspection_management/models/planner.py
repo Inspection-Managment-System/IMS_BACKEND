@@ -13,7 +13,9 @@ class Planner(models.Model):
     ]
     name = models.CharField(max_length=255, default="Planner", unique=True)
     rule = models.CharField(max_length=10, choices=RULE_CHOICES, null=True, blank=True)
-    evince_description = models.CharField(max_length=255, default="")
+    evince_description = models.CharField(
+        max_length=255, default="", null=True, blank=True
+    )
     evince_business_unit = models.ForeignKey(
         BusinessUnit,
         on_delete=models.CASCADE,

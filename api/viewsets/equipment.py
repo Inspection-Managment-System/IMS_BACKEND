@@ -9,7 +9,9 @@ from users.authorization import role_required
 from users.models.audit_history import AuditHistory
 
 
-@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
+@method_decorator(
+    role_required(allowed_roles=["Admin, Inspector, Manager"]), name="dispatch"
+)
 class EquipmentViewSet(viewsets.ModelViewSet):
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
