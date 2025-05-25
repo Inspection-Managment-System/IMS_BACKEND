@@ -1,3 +1,4 @@
+import zoneinfo
 from datetime import datetime, timedelta, timezone
 from time import sleep
 
@@ -9,6 +10,18 @@ from inspection_management.models import Evince, Planner
 
 class Command(BaseCommand):
     help = "Create Evince objects based on Planner rules"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--timezone',
+            type=str,
+            help='Timezone name (IANA, e.g. Asia/Dubai, Europe/London). Defaults to UTC.',
+            default='UTC'
+        )
+
+    def to_local_naive(self, dt_utc, local_tz):
+        naive = dt_utc.replace(tzinfo=None)
+        return naive.replace(tzinfo=local_tz)
 
     def create_evince(self, planner):
         evince = Evince(
@@ -27,20 +40,28 @@ class Command(BaseCommand):
         create_evince_instance(evince, data)
 
     def handle(self, *args, **options):
-        print("Planner Running...")
+        tz_name = options['timezone']
+        try:
+            local_tz = zoneinfo.ZoneInfo(tz_name)
+        except Exception:
+            self.stderr.write(f"Invalid timezone '{tz_name}'. Falling back to UTC.")
+            local_tz = zoneinfo.ZoneInfo("UTC")
+
+        self.stdout.write(f"Using timezone: {local_tz}")
+
         while True:
-            now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
-            print("Now: ", now)
+            now_utc = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+            now = now_utc.astimezone(local_tz)
+            self.stdout.write(f"Now (local): {now}")
 
             for planner in Planner.objects.all():
-                start_time = planner.start_date_time.replace(second=0, microsecond=0)
-                end_time = planner.end_date_time.replace(second=0, microsecond=0)
+                start_time = self.to_local_naive(planner.start_date_time, local_tz).replace(second=0, microsecond=0)
+                end_time = self.to_local_naive(planner.end_date_time, local_tz).replace(second=0, microsecond=0)
 
-                print("Start: ", start_time)
-                print("End: ", end_time)
+                self.stdout.write(f"Planner ID {planner.id} - Start (local naive): {start_time}, End (local naive): {end_time}")
 
                 if now < start_time or now >= end_time:
-                    print("Not in range yet..")
+                    self.stdout.write("Not in range yet..")
                     continue
 
                 if (
@@ -48,7 +69,7 @@ class Command(BaseCommand):
                     and now.time() >= start_time.time()
                     and now.time() <= (start_time + timedelta(minutes=1)).time()
                 ):
-                    print("Creating Evince now (Daily).")
+                    self.stdout.write("Creating Evince now (Daily).")
                     self.create_evince(planner)
 
                 elif (
@@ -57,7 +78,7 @@ class Command(BaseCommand):
                     and now.time() <= (start_time + timedelta(minutes=1)).time()
                 ):
                     if now.strftime("%A") in planner.day_of_week.split(","):
-                        print("Creating Evince now (Weekly).")
+                        self.stdout.write("Creating Evince now (Weekly).")
                         self.create_evince(planner)
 
                 elif (
@@ -65,10 +86,8 @@ class Command(BaseCommand):
                     and now.time() >= start_time.time()
                     and now.time() <= (start_time + timedelta(minutes=1)).time()
                 ):
-                    if now.strftime("%A") in planner.day_of_week.split(
-                        ","
-                    ) and now.strftime("%b-%Y") in planner.month.split(","):
-                        print("Creating Evince now (Monthly).")
+                    if now.strftime("%A") in planner.day_of_week.split(",") and now.strftime("%b-%Y") in planner.month.split(","):
+                        self.stdout.write("Creating Evince now (Monthly).")
                         self.create_evince(planner)
 
             sleep(60)
