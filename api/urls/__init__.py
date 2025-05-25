@@ -27,6 +27,7 @@ from api.viewsets import (
     AuditHistoryViewSet,
     TicketViewSet,
     DocumentViewSet,
+    SampleViewSet,
 )
 
 router = DefaultRouter()
@@ -68,8 +69,8 @@ router.register(r"reports", IMSReportViewSet, basename="reports")
 router.register(r"tickets", TicketViewSet, basename="tickets")
 router.register(r"documents", DocumentViewSet, basename="documents")
 
-
 urlpatterns = [
     path("", include(router.urls)),
     path("auth/", include("api.urls.user")),
+    path("samples/", SampleViewSet.as_view()),
 ]
