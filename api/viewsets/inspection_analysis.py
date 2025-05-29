@@ -46,6 +46,11 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
             user=request.user,
             action=f"Created inspection analysis: {serializer.instance.name}",
         )
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=self.get_success_headers(serializer.data),
+        )
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()

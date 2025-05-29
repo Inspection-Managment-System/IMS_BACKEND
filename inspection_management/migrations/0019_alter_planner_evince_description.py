@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inspection_management', '0018_document_next_version_and_more'),
+        ("inspection_management", "0018_document_next_version_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='planner',
-            name='evince_description',
-            field=models.CharField(blank=True, default='', max_length=255, null=True),
+            model_name="planner",
+            name="evince_description",
+            field=models.CharField(blank=True, default="", max_length=255, null=True),
         ),
     ]
