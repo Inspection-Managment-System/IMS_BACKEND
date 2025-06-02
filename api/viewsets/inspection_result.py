@@ -22,6 +22,13 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         comments = request.data.get("comments", "")
         attachment_name = request.data.get("attachment_name", "")
         attachment = request.data.get("attachment", "")
+        sample_required = request.data.get("sample_required", False)
+        if sample_required:
+            inspection_result.sample_required = True
+            inspection_result.sample_content = request.data.get("sample_content", None)
+        else:
+            inspection_result.sample_required = False
+            inspection_result.sample_content = None
 
         if not entered_value:
             return Response(
