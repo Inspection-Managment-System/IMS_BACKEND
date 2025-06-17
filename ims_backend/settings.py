@@ -40,7 +40,17 @@ DATABASES = {
     "default": {
         "ENGINE": config("DB_ENGINE"),
         "NAME": BASE_DIR / config("DB_NAME"),
-    }
+    },
+    "LW8Process": {
+        "ENGINE": config("LW8_DB_ENGINE"),
+        "NAME": config("LW8_DB_NAME"),
+        "USER": config("LW8_DB_USER"),
+        "PASSWORD": config("LW8_DB_PASSWORD"),
+        "HOST": config("LW8_DB_HOST").encode("utf-8").decode("unicode_escape"),
+        "OPTIONS": {
+            "driver": config("LW8_DB_DRIVER", default="ODBC Driver 17 for SQL Server"),
+        },
+    },
 }
 
 

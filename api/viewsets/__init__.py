@@ -29,3 +29,4 @@ from .password_change import PasswordChangeAPIView
 from .ticket import TicketViewSet
 from .read_emirates_id import ReadEmiratesId
 from .document import DocumentViewSet
+from .sample import SampleViewSet

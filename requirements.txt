@@ -30,4 +30,5 @@ pyperclip==1.9.0
 PyRect==0.2.0
 PyScreeze==1.0.1
 pytweening==1.2.0
-
+django-mssql-backend==2.8.1
+pyodbc==5.2.0

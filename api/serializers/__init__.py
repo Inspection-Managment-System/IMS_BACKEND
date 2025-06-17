@@ -22,3 +22,4 @@ from .notification import *
 from .audit_history import *
 from .ticket import *
 from .document import *
+from .sample import *

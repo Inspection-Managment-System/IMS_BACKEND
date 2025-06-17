@@ -19,3 +19,4 @@ from .equipment_type import EquipmentType
 from .datalist import DataList
 from .ticket import Ticket
 from .document import Document
+from .sample import Sample
