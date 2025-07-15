@@ -40,7 +40,17 @@ DATABASES = {
     "default": {
         "ENGINE": config("DB_ENGINE"),
         "NAME": BASE_DIR / config("DB_NAME"),
-    }
+    },
+    "LW8Process": {
+        "ENGINE": config("LW8_DB_ENGINE"),
+        "NAME": config("LW8_DB_NAME"),
+        "USER": config("LW8_DB_USER"),
+        "PASSWORD": config("LW8_DB_PASSWORD"),
+        "HOST": config("LW8_DB_HOST").encode("utf-8").decode("unicode_escape"),
+        "OPTIONS": {
+            "driver": config("LW8_DB_DRIVER", default="ODBC Driver 17 for SQL Server"),
+        },
+    },
 }
 
 
@@ -73,6 +83,8 @@ STATIC_URL = config("STATIC_URL")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (config("JWT_AUTHENTICATION_CLASS"),),
+    "DEFAULT_PAGINATION_CLASS": config("DEFAULT_PAGINATION_CLASS"),
+    "PAGE_SIZE": config("PAGE_SIZE"),
 }
 
 SIMPLE_JWT = {
@@ -87,3 +99,10 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", cast=bool)
 CORS_ALLOW_METHODS = config("CORS_ALLOW_METHODS", cast=Csv())
 CORS_ALLOW_HEADERS = config("CORS_ALLOW_HEADERS", cast=Csv())
+EMAIL_BACKEND = config("EMAIL_BACKEND")
+
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_HOST_PORT = config("EMAIL_HOST_PORT")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")

@@ -27,6 +27,9 @@ class InspectionPoint(models.Model):
     qr_code = models.TextField(blank=True, null=True)
     flammability = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
     health_risk = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
+    reactivity = models.CharField(max_length=10, choices=RISK_CHOICES, default="Low")
+    latitude = models.FloatField(default=0.0000)
+    longitude = models.FloatField(default=0.0000)
     attachment_name = models.CharField(max_length=255, blank=True, null=True)
     attachment = models.TextField(blank=True, null=True)
 
@@ -60,3 +63,19 @@ class InspectionPoint(models.Model):
 def generate_qr_code_after_save(sender, instance, created, **kwargs):
     if created:
         instance.generate_qr_code()
+
+
+class LocationRestrictionSetting(models.Model):
+    is_enabled = models.BooleanField(default=True)
+
+    @classmethod
+    def get_flag(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj.is_enabled
+
+    @classmethod
+    def set_flag(cls, value: bool):
+        obj, _ = cls.objects.get_or_create(id=1)
+        obj.is_enabled = value
+        obj.save()
+        return obj.is_enabled

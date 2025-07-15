@@ -23,6 +23,13 @@ class Evince(models.Model):
         on_delete=models.CASCADE,
     )
     inspection_point = models.ForeignKey(InspectionPoint, on_delete=models.CASCADE)
+    logged_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="logged_by",
+        null=True,
+        blank=True,
+    )
     assigned_to = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

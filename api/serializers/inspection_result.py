@@ -26,6 +26,8 @@ class SimplifiedInspectionResultSerializer(serializers.ModelSerializer):
             "id",
             "attachment_name",
             "attachment",
+            "sample_required",
+            "sample_content",
         ]
 
     def get_inspection_analysis(self, obj):

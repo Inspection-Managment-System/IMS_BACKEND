@@ -23,10 +23,11 @@ class DataGroupSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     role = GroupSerializer()
     data_groups = DataGroupSerializer(many=True)
+    shift_timing = serializers.CharField(source="get_shift_timing", read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ("role", "data_groups", "profile_picture")
+        fields = ("role", "data_groups", "shift", "shift_timing", "profile_picture")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -38,9 +39,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreationSerializer(serializers.ModelSerializer):
+
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = User
-        fields = ("username", "email", "password")
+        fields = ("username", "email", "password", "first_name", "last_name")
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):

@@ -22,3 +22,11 @@ from .admin_charts import AdminChartsViewSet
 from .inspector_dashboard import InspectorDashboardViewSet
 from .manager_dashboard import ManagerChartsViewSet
 from .reports import IMSReportViewSet
+from .password_reset import PasswordResetAPIView
+from .notification import NotificationViewSet
+from .audit_history import AuditHistoryViewSet
+from .password_change import PasswordChangeAPIView
+from .ticket import TicketViewSet
+from .read_emirates_id import ReadEmiratesId
+from .document import DocumentViewSet
+from .sample import SampleViewSet

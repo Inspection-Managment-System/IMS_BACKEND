@@ -9,21 +9,24 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from api.serializers import (EvinceSerializer,
+from api.serializers import (EvinceSerializer, ParameterSerializer,
                              SimplifiedInspectionResultSerializer)
 from ims_backend.utils.helper import get_user_groups
 from inspection_management.models import (BusinessUnit, Evince,
                                           InspectionAnalysis, InspectionPoint,
-                                          InspectionResult, InspectionTest)
+                                          InspectionResult, InspectionTest,
+                                          Parameter)
 from users.authorization import role_required
 from users.models import User
+from users.models.audit_history import AuditHistory
+from users.models.notification import Notification
 
 
 @method_decorator(
     role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
 )
 class EvinceViewSet(viewsets.ModelViewSet):
-    queryset = Evince.objects.all()
+    queryset = Evince.objects.all().order_by("-id")
     serializer_class = EvinceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -130,13 +133,41 @@ class EvinceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         serializer.instance.save()
-        self.create_inspection_tests_and_results(serializer.instance)
+        self.create_inspection_tests_and_results(serializer.instance, is_update=False)
+
+        AuditHistory.objects.create(
+            user=request.user, action=f"Created evince #{serializer.instance.id}"
+        )
+
+        if (
+            serializer.instance.assigned_to
+            and serializer.instance.assigned_to != request.user
+        ):
+            Notification.objects.create(
+                sender=request.user,
+                recipient=serializer.instance.assigned_to,
+                content=f"You have been assigned to evince #{serializer.instance.id}.",
+            )
+
+        if (
+            serializer.instance.reviewed_by
+            and serializer.instance.reviewed_by != request.user
+        ):
+            Notification.objects.create(
+                sender=request.user,
+                recipient=serializer.instance.reviewed_by,
+                content=f"You have been assigned as reviewer for evince #{serializer.instance.id}.",
+            )
+
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
 
-    def create_inspection_tests_and_results(self, evince):
+    def create_inspection_tests_and_results(self, evince, is_update=False):
+        if is_update:
+            InspectionTest.objects.filter(evince=evince).delete()
+            InspectionResult.objects.filter(evince=evince).delete()
         for inspection_analysis in evince.inspection_analyses.all():
             inspection_test = InspectionTest.objects.create(
                 evince=evince,
@@ -155,10 +186,64 @@ class EvinceViewSet(viewsets.ModelViewSet):
 
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
+
+        original_assigned_to = instance.assigned_to
+        original_reviewed_by = instance.reviewed_by
+        original_status = instance.status
+
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+        self.create_inspection_tests_and_results(serializer.instance, is_update=True)
+
+        AuditHistory.objects.create(
+            user=request.user, action=f"Updated evince #{serializer.instance.id}"
+        )
+
+        if (
+            original_assigned_to != serializer.instance.assigned_to
+            and serializer.instance.assigned_to
+        ):
+            Notification.objects.create(
+                sender=request.user,
+                recipient=serializer.instance.assigned_to,
+                content=f"You have been assigned to evince #{serializer.instance.id}.",
+            )
+
+        if (
+            original_reviewed_by != serializer.instance.reviewed_by
+            and serializer.instance.reviewed_by
+        ):
+            Notification.objects.create(
+                sender=request.user,
+                recipient=serializer.instance.reviewed_by,
+                content=f"You have been assigned as reviewer for evince #{serializer.instance.id}.",
+            )
+
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        evince_id = instance.id
+
+        AuditHistory.objects.create(
+            user=self.request.user, action=f"Deleted evince #{evince_id}"
+        )
+
+        if instance.assigned_to and instance.assigned_to != self.request.user:
+            Notification.objects.create(
+                sender=self.request.user,
+                recipient=instance.assigned_to,
+                content=f"Evince #{evince_id} that was assigned to you has been deleted.",
+            )
+
+        if instance.reviewed_by and instance.reviewed_by != self.request.user:
+            Notification.objects.create(
+                sender=self.request.user,
+                recipient=instance.reviewed_by,
+                content=f"Evince #{evince_id} that you were reviewing has been deleted.",
+            )
+
+        instance.delete()
 
     def preprocess_data(self, data):
         if "business_unit" in data:
@@ -180,11 +265,28 @@ class EvinceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="results")
     def get_results(self, request, pk=None):
         """
-        Fetch the results related to a specific Evince.
+        Fetch the results and related parameters for a specific Evince.
         """
         inspection_results = InspectionResult.objects.filter(evince_id=pk)
-        serializer = SimplifiedInspectionResultSerializer(inspection_results, many=True)
-        return Response(serializer.data)
+        related_tests = InspectionTest.objects.filter(evince_id=pk).select_related(
+            "inspection_analysis"
+        )
+
+        related_parameters = Parameter.objects.filter(
+            inspection_analysis__inspectiontest__in=related_tests
+        ).distinct()
+
+        result_serializer = SimplifiedInspectionResultSerializer(
+            inspection_results, many=True
+        )
+        parameter_serializer = ParameterSerializer(related_parameters, many=True)
+
+        return Response(
+            {
+                "inspection_results": result_serializer.data,
+                "related_parameters": parameter_serializer.data,
+            }
+        )
 
     @action(detail=True, methods=["post"], url_path="status-update")
     def update_status(self, request, pk=None):
@@ -192,6 +294,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
         API to update the status of the Evince based on the provided status and update InspectionResult data.
         """
         evince = get_object_or_404(Evince, pk=pk)
+        old_status = evince.status
         status_to_update = request.data.get("status")
 
         if not status_to_update:
@@ -206,10 +309,53 @@ class EvinceViewSet(viewsets.ModelViewSet):
         evince.reassigned = True
         evince.save()
 
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Updated evince #{evince.id} status from {old_status} to {status_to_update}",
+        )
+
+        self.send_status_update_notifications(
+            evince, old_status, status_to_update, request.user
+        )
+
         return Response(
             {"message": f"Evince status updated to {status_to_update}."},
             status=status.HTTP_200_OK,
         )
+
+    def send_status_update_notifications(self, evince, old_status, new_status, user):
+
+        if new_status == "ResultsEntered":
+            if evince.reviewed_by and evince.reviewed_by != user:
+                Notification.objects.create(
+                    sender=user,
+                    recipient=evince.reviewed_by,
+                    content=f"Results have been entered for evince #{evince.id} and are ready for your review.",
+                )
+
+        elif new_status == "Rejected":
+            if evince.assigned_to and evince.assigned_to != user:
+                Notification.objects.create(
+                    sender=user,
+                    recipient=evince.assigned_to,
+                    content=f"Evince #{evince.id} has been rejected and requires your attention.",
+                )
+
+        elif new_status == "Reassigned":
+            if evince.assigned_to and evince.assigned_to != user:
+                Notification.objects.create(
+                    sender=user,
+                    recipient=evince.assigned_to,
+                    content=f"Evince #{evince.id} has been reassigned to you and requires your attention.",
+                )
+
+        elif new_status == "Approved":
+            if evince.assigned_to and evince.assigned_to != user:
+                Notification.objects.create(
+                    sender=user,
+                    recipient=evince.assigned_to,
+                    content=f"Evince #{evince.id} has been approved. Good job!",
+                )
 
     def handle_status_update(self, evince, status_to_update):
         """
