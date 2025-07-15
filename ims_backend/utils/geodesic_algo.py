@@ -1,7 +1,7 @@
 from geopy.distance import geodesic
 
 
-def is_user_at_location(target_coords, user_coords, threshold_meters=50):
+def is_user_at_location(target_coords, user_coords, threshold_meters=100):
     """
     Checks if a user is at particular location based on their coordinates.
 

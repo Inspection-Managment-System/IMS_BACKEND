@@ -63,3 +63,19 @@ class InspectionPoint(models.Model):
 def generate_qr_code_after_save(sender, instance, created, **kwargs):
     if created:
         instance.generate_qr_code()
+
+
+class LocationRestrictionSetting(models.Model):
+    is_enabled = models.BooleanField(default=True)
+
+    @classmethod
+    def get_flag(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj.is_enabled
+
+    @classmethod
+    def set_flag(cls, value: bool):
+        obj, _ = cls.objects.get_or_create(id=1)
+        obj.is_enabled = value
+        obj.save()
+        return obj.is_enabled

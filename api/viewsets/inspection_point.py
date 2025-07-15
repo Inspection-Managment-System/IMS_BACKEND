@@ -11,6 +11,7 @@ from inspection_management.models import BusinessUnit, InspectionPoint
 from users.authorization import role_required
 from users.models.audit_history import AuditHistory
 from users.models.notification import Notification
+from inspection_management.models.inspection_point import LocationRestrictionSetting
 
 
 @method_decorator(
@@ -91,6 +92,7 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def preprocess_data(self, data):
+       
         if "name" in data:
             data["name"] = data["name"].lower()
         if "business_unit" in data:
@@ -138,6 +140,10 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Bypass location check if restriction is disabled
+        if not LocationRestrictionSetting.get_flag():
+            return Response({"is_user_at_location": True}, status=status.HTTP_200_OK)
+
         inspection_point = InspectionPoint.objects.get(id=inspection_point_id)
         target_coords = (inspection_point.latitude, inspection_point.longitude)
         user_coords = (latitude, longitude)
@@ -149,3 +155,19 @@ class InspectionPointViewSet(viewsets.ModelViewSet):
         return Response(
             {"is_user_at_location": is_user_at_location}, status=status.HTTP_200_OK
         )
+
+    @action(detail=False, methods=["get"], url_path="location_restriction_flag")
+    def get_location_restriction_flag(self, request):
+        """Returns the current state of the location restriction flag."""
+        return Response({"is_enabled": LocationRestrictionSetting.get_flag()})
+
+    @action(detail=False, methods=["post"], url_path="set_location_restriction_flag")
+    def set_location_restriction_flag(self, request):
+        """Sets the location restriction flag. Only Admins allowed."""
+        if not request.user.is_superuser and not (hasattr(request.user, 'userprofile') and getattr(request.user.userprofile, 'role', None) and request.user.userprofile.role.name == 'Admin'):
+            return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
+        is_enabled = request.data.get("is_enabled")
+        if is_enabled is None:
+            return Response({"detail": "is_enabled is required."}, status=status.HTTP_400_BAD_REQUEST)
+        LocationRestrictionSetting.set_flag(bool(is_enabled))
+        return Response({"is_enabled": LocationRestrictionSetting.get_flag()})
