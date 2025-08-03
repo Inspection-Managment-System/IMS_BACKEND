@@ -171,17 +171,23 @@ class EvinceViewSet(viewsets.ModelViewSet):
         if is_update:
             InspectionTest.objects.filter(evince=evince).delete()
             InspectionResult.objects.filter(evince=evince).delete()
+        
+        # Create one inspection test per inspection analysis
         for inspection_analysis in evince.inspection_analyses.all():
             inspection_test = InspectionTest.objects.create(
                 evince=evince,
                 inspection_analysis=inspection_analysis,
                 changed_by=evince.changed_by,
             )
-            InspectionResult.objects.create(
-                evince=evince,
-                inspection_test=inspection_test,
-                changed_by=evince.changed_by,
-            )
+            
+            # Create one inspection result per parameter in this inspection analysis
+            parameters = Parameter.objects.filter(inspection_analysis=inspection_analysis)
+            for parameter in parameters:
+                InspectionResult.objects.create(
+                    evince=evince,
+                    inspection_test=inspection_test,
+                    changed_by=evince.changed_by,
+                )
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -263,6 +269,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
                 data["inspection_analyses"][index] = InspectionAnalysis.objects.get(
                     name=inspection_analysis_name
                 ).id
+
         return data
 
     @action(detail=True, methods=["get"], url_path="results")
@@ -270,24 +277,45 @@ class EvinceViewSet(viewsets.ModelViewSet):
         """
         Fetch the results and related parameters for a specific Evince.
         """
-        inspection_results = InspectionResult.objects.filter(evince_id=pk)
-        related_tests = InspectionTest.objects.filter(evince_id=pk).select_related(
-            "inspection_analysis"
+        inspection_results = InspectionResult.objects.filter(evince_id=pk).select_related(
+            "inspection_test__inspection_analysis"
         )
-
+        
+        # Get all parameters for the inspection analyses in this evince
         related_parameters = Parameter.objects.filter(
-            inspection_analysis__inspectiontest__in=related_tests
+            inspection_analysis__inspectiontest__evince_id=pk
         ).distinct()
 
-        result_serializer = SimplifiedInspectionResultSerializer(
-            inspection_results, many=True
-        )
-        parameter_serializer = ParameterSerializer(related_parameters, many=True)
+        # Create a list of results with parameter information
+        results_with_parameters = []
+        for i, result in enumerate(inspection_results):
+            # Get the corresponding parameter (assuming one result per parameter)
+            parameter = related_parameters[i] if i < len(related_parameters) else None
+            
+            result_data = {
+                "id": result.id,
+                "evince": result.evince.id,
+                "inspection_test": result.inspection_test.id,
+                "inspection_analysis": result.inspection_test.inspection_analysis.name,
+                "parameter_name": parameter.name if parameter else "",
+                "parameter_description": parameter.description if parameter else "",
+                "parameter_unit": parameter.unit.name if parameter and parameter.unit else "",
+                "parameter_min_value": parameter.min_value if parameter else None,
+                "parameter_max_value": parameter.max_value if parameter else None,
+                "parameter_avg_value": parameter.avg_value if parameter else None,
+                "parameter_string_value": parameter.string_value if parameter else None,
+                "entered_value": result.entered_value,
+                "comments": result.comments,
+                "status": result.status,
+                "changed_on": result.changed_on,
+                "changed_by": result.changed_by.id,
+            }
+            results_with_parameters.append(result_data)
 
         return Response(
             {
-                "inspection_results": result_serializer.data,
-                "related_parameters": parameter_serializer.data,
+                "inspection_results": results_with_parameters,
+                "related_parameters": ParameterSerializer(related_parameters, many=True).data,
             }
         )
 

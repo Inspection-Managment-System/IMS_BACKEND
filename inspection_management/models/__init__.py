@@ -20,3 +20,10 @@ from .datalist import DataList
 from .ticket import Ticket
 from .document import Document
 from .sample import Sample
+from .hse_models import (
+    HSEEnvironmentalData,
+    HSESafetyIncident,
+    HSEEquipment,
+    HSECompliance,
+    HSETraining
+)

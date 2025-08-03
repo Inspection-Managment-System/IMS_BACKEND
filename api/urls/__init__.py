@@ -73,4 +73,5 @@ urlpatterns = [
     path("", include(router.urls)),
     path("auth/", include("api.urls.user")),
     path("samples/", SampleViewSet.as_view()),
+    path("", include("api.urls.hse")),
 ]

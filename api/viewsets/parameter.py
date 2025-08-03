@@ -15,6 +15,16 @@ class ParameterViewSet(viewsets.ModelViewSet):
     serializer_class = ParameterSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def list(self, request, *args, **kwargs):
+        inspection_analysis_name = request.query_params.get("inspection_analysis", None)
+        if inspection_analysis_name:
+            try:
+                inspection_analysis = InspectionAnalysis.objects.get(name=inspection_analysis_name)
+                self.queryset = self.queryset.filter(inspection_analysis=inspection_analysis)
+            except InspectionAnalysis.DoesNotExist:
+                self.queryset = Parameter.objects.none()
+        return super().list(request, *args, **kwargs)
+
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
         data = self.preprocess_data(data)
