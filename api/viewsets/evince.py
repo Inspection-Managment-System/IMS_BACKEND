@@ -304,6 +304,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
                 "parameter_max_value": parameter.max_value if parameter else None,
                 "parameter_avg_value": parameter.avg_value if parameter else None,
                 "parameter_string_value": parameter.string_value if parameter else None,
+                "checklist_data_type": parameter.checklist_data_type if parameter else None,
                 "entered_value": result.entered_value,
                 "comments": result.comments,
                 "status": result.status,

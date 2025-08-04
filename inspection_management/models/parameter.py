@@ -20,6 +20,17 @@ class Parameter(models.Model):
     max_value = models.IntegerField(null=True, blank=True)
     avg_value = models.IntegerField(null=True, blank=True)
     string_value = models.CharField(max_length=255, null=True, blank=True)
+    checklist_data_type = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        choices=[
+            ('yes_no', 'Yes/No'),
+            ('satisfactory_unsatisfactory', 'Satisfactory/Unsatisfactory'),
+            ('true_false', 'True/False'),
+        ],
+        default='yes_no'
+    )
     attachment_name = models.CharField(max_length=255, blank=True, null=True)
     attachment = models.TextField(blank=True, null=True)
 
