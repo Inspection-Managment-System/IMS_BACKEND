@@ -129,14 +129,24 @@ class EvinceViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        data = self.preprocess_data(data)
+        try:
+            data = request.data.copy()
+            print(f"Original data: {data}")
+            
+            data = self.preprocess_data(data)
+            print(f"Preprocessed data: {data}")
 
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        serializer.instance.save()
-        self.create_inspection_tests_and_results(serializer.instance, is_update=False)
+            serializer = self.get_serializer(data=data)
+            if not serializer.is_valid():
+                print(f"Serializer errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            self.perform_create(serializer)
+            serializer.instance.save()
+            self.create_inspection_tests_and_results(serializer.instance, is_update=False)
+        except Exception as e:
+            print(f"Error in create method: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         AuditHistory.objects.create(
             user=request.user, action=f"Created evince #{serializer.instance.id}"
@@ -256,19 +266,49 @@ class EvinceViewSet(viewsets.ModelViewSet):
 
     def preprocess_data(self, data):
         if "business_unit" in data:
-            business_unit_name = data.get("business_unit")
-            data["business_unit"] = BusinessUnit.objects.get(name=business_unit_name).id
+            business_unit_value = data.get("business_unit")
+            # Handle both ID and name
+            if isinstance(business_unit_value, (int, str)) and str(business_unit_value).isdigit():
+                # It's already an ID
+                data["business_unit"] = int(business_unit_value)
+            else:
+                # It's a name, convert to ID
+                try:
+                    data["business_unit"] = BusinessUnit.objects.get(name=business_unit_value).id
+                except BusinessUnit.DoesNotExist:
+                    pass
+                    
         if "inspection_point" in data:
-            inspection_point_name = data.get("inspection_point")
-            data["inspection_point"] = InspectionPoint.objects.get(
-                name=inspection_point_name
-            ).id
+            inspection_point_value = data.get("inspection_point")
+            # Handle both ID and name
+            if isinstance(inspection_point_value, (int, str)) and str(inspection_point_value).isdigit():
+                # It's already an ID
+                data["inspection_point"] = int(inspection_point_value)
+            else:
+                # It's a name, convert to ID
+                try:
+                    data["inspection_point"] = InspectionPoint.objects.get(
+                        name=inspection_point_value
+                    ).id
+                except InspectionPoint.DoesNotExist:
+                    pass
+                    
         if "inspection_analyses" in data:
-            inspection_analysis_names = data.get("inspection_analyses")
-            for index, inspection_analysis_name in enumerate(inspection_analysis_names):
-                data["inspection_analyses"][index] = InspectionAnalysis.objects.get(
-                    name=inspection_analysis_name
-                ).id
+            inspection_analysis_values = data.get("inspection_analyses")
+            if isinstance(inspection_analysis_values, list):
+                for index, inspection_analysis_value in enumerate(inspection_analysis_values):
+                    # Handle both ID and name
+                    if isinstance(inspection_analysis_value, (int, str)) and str(inspection_analysis_value).isdigit():
+                        # It's already an ID
+                        data["inspection_analyses"][index] = int(inspection_analysis_value)
+                    else:
+                        # It's a name, convert to ID
+                        try:
+                            data["inspection_analyses"][index] = InspectionAnalysis.objects.get(
+                                name=inspection_analysis_value
+                            ).id
+                        except InspectionAnalysis.DoesNotExist:
+                            pass
 
         return data
 

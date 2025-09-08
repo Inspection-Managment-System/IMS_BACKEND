@@ -27,3 +27,8 @@ from .hse_models import (
     HSECompliance,
     HSETraining
 )
+from .hse_workflow_models import (
+    HSEObservation,
+    HSEWorkflowHistory,
+    HSEEvidence
+)

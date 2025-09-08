@@ -23,3 +23,4 @@ from .audit_history import *
 from .ticket import *
 from .document import *
 from .sample import *
+from .hse_serializers import *

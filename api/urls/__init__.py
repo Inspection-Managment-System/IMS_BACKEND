@@ -29,6 +29,7 @@ from api.viewsets import (
     DocumentViewSet,
     SampleViewSet,
 )
+from api.viewsets.hse_result import HSEResultViewSet
 
 router = DefaultRouter()
 router.register(r"datagroups", DatagroupViewSet, basename="datagroup")
@@ -56,6 +57,7 @@ router.register(r"planners", PlannerViewSet, basename="planners")
 router.register(
     r"inspection_results", InspectionResultViewSet, basename="inspection_results"
 )
+router.register(r"hse_results", HSEResultViewSet, basename="hse_results")
 router.register(r"admin_charts", AdminChartsViewSet, basename="admin_charts")
 router.register(
     r"inspector_dashboard", InspectorDashboardViewSet, basename="inspector_dashboard"
