@@ -14,7 +14,7 @@ from users.models.audit_history import AuditHistory
 from users.models.notification import Notification
 
 
-@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
+@method_decorator(role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch")
 class InspectionAnalysisViewSet(viewsets.ModelViewSet):
     queryset = InspectionAnalysis.objects.all()
     serializer_class = InspectionAnalysisSerializer
@@ -35,6 +35,13 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
+        # Only Admin can create inspection analyses
+        if request.user.userprofile.role.name != "Admin":
+            return Response(
+                {"error": "Only Admin users can create inspection analyses"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
         data = request.data.copy()
         data = self.preprocess_data(data)
 
@@ -53,6 +60,13 @@ class InspectionAnalysisViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request, *args, **kwargs):
+        # Only Admin can update inspection analyses
+        if request.user.userprofile.role.name != "Admin":
+            return Response(
+                {"error": "Only Admin users can update inspection analyses"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
         data = request.data.copy()
         data = self.preprocess_data(data)
 

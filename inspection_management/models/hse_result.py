@@ -142,6 +142,18 @@ class HSEResult(models.Model):
         help_text="Additional notes or observations"
     )
     
+    # Technical Measurements (same as regular inspection)
+    inspection_analyses = models.ManyToManyField(
+        'InspectionAnalysis', 
+        blank=True,
+        help_text="Analysis types used for technical measurements"
+    )
+    parameter_results = models.JSONField(
+        blank=True, 
+        null=True,
+        help_text="Parameter measurement results in format: {'parameter_id': 'value'}"
+    )
+    
     # Status tracking
     status = models.CharField(
         max_length=20, 

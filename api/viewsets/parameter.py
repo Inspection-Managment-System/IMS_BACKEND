@@ -9,7 +9,7 @@ from users.authorization import role_required
 from users.models.audit_history import AuditHistory
 
 
-@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
+@method_decorator(role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch")
 class ParameterViewSet(viewsets.ModelViewSet):
     queryset = Parameter.objects.all()
     serializer_class = ParameterSerializer
@@ -26,6 +26,13 @@ class ParameterViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
+        # Only Admin can create parameters
+        if request.user.userprofile.role.name != "Admin":
+            return Response(
+                {"error": "Only Admin users can create parameters"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
         data = request.data.copy()
         data = self.preprocess_data(data)
 
@@ -46,6 +53,13 @@ class ParameterViewSet(viewsets.ModelViewSet):
         return serializer.save()
 
     def update(self, request, *args, **kwargs):
+        # Only Admin can update parameters
+        if request.user.userprofile.role.name != "Admin":
+            return Response(
+                {"error": "Only Admin users can update parameters"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
         data = request.data.copy()
         data = self.preprocess_data(data)
 
