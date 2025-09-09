@@ -30,6 +30,7 @@ from api.viewsets import (
     SampleViewSet,
 )
 from api.viewsets.hse_result import HSEResultViewSet
+from api.viewsets.maintenance_result import MaintenanceResultViewSet
 
 router = DefaultRouter()
 router.register(r"datagroups", DatagroupViewSet, basename="datagroup")
@@ -58,6 +59,7 @@ router.register(
     r"inspection_results", InspectionResultViewSet, basename="inspection_results"
 )
 router.register(r"hse_results", HSEResultViewSet, basename="hse_results")
+router.register(r"maintenance_results", MaintenanceResultViewSet, basename="maintenance_results")
 router.register(r"admin_charts", AdminChartsViewSet, basename="admin_charts")
 router.register(
     r"inspector_dashboard", InspectorDashboardViewSet, basename="inspector_dashboard"
