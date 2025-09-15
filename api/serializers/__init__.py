@@ -24,3 +24,5 @@ from .ticket import *
 from .document import *
 from .sample import *
 from .hse_serializers import *
+from .hse_risk_assessment import *
+from .external_departments import *

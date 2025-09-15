@@ -32,3 +32,7 @@ from .hse_workflow_models import (
     HSEWorkflowHistory,
     HSEEvidence
 )
+from .external_departments import (
+    ExternalDepartment,
+    ExternalDepartmentAssignment
+)

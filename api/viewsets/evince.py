@@ -600,3 +600,172 @@ This is a HIGH PRIORITY alert that requires your immediate response.
 
     def set_approved(self, evince):
         pass
+
+    # HSE Risk Management Methods
+    def get_queryset(self):
+        """Override to filter by evince type"""
+        queryset = super().get_queryset()
+        evince_type = self.request.query_params.get('evince_type')
+        
+        if evince_type == 'hse_risk_management':
+            return queryset.filter(evince_type='hse_risk_management')
+        elif evince_type:
+            return queryset.filter(evince_type=evince_type)
+        
+        return queryset
+
+    @action(detail=False, methods=['get'], url_path='hse-risk-dashboard')
+    def hse_risk_dashboard(self, request):
+        """Get HSE Risk Management dashboard statistics"""
+        try:
+            from api.services.hse_risk_evince_service import HSERiskEvinceService
+            from api.serializers.hse_risk_serializers import HSERiskDashboardStatsSerializer
+            
+            stats = HSERiskEvinceService.get_hse_risk_dashboard_stats()
+            serializer = HSERiskDashboardStatsSerializer(stats)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'], url_path='hse-risk-create')
+    def hse_risk_create(self, request):
+        """Create HSE Risk Management evince"""
+        try:
+            from api.serializers.hse_risk_serializers import HSERiskEvinceCreateSerializer
+            
+            serializer = HSERiskEvinceCreateSerializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                evince = serializer.save()
+                from api.serializers.hse_risk_serializers import HSERiskEvinceSerializer
+                response_serializer = HSERiskEvinceSerializer(evince)
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='hse-risk-inspector-review')
+    def hse_risk_inspector_review(self, request, pk=None):
+        """Inspector review of HSE Risk evince"""
+        try:
+            from api.services.hse_risk_evince_service import HSERiskEvinceService
+            from api.serializers.hse_risk_serializers import HSERiskInspectorReviewSerializer
+            
+            evince = self.get_object()
+            if evince.evince_type != 'hse_risk_management':
+                return Response({'error': 'Invalid evince type'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer = HSERiskInspectorReviewSerializer(data=request.data)
+            if serializer.is_valid():
+                risk_assessment_data = serializer.validated_data['risk_assessment']
+                risk_assessment_data['notes'] = serializer.validated_data.get('comments', '')
+                
+                updated_evince = HSERiskEvinceService.inspector_review(
+                    evince, request.user, risk_assessment_data
+                )
+                
+                from api.serializers.hse_risk_serializers import HSERiskEvinceSerializer
+                response_serializer = HSERiskEvinceSerializer(updated_evince)
+                return Response(response_serializer.data)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='hse-risk-manager-assignment')
+    def hse_risk_manager_assignment(self, request, pk=None):
+        """Manager assignment of HSE Risk evince"""
+        try:
+            from api.services.hse_risk_evince_service import HSERiskEvinceService
+            from api.serializers.hse_risk_serializers import HSERiskManagerAssignmentSerializer
+            
+            evince = self.get_object()
+            if evince.evince_type != 'hse_risk_management':
+                return Response({'error': 'Invalid evince type'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer = HSERiskManagerAssignmentSerializer(data=request.data)
+            if serializer.is_valid():
+                assignment_data = serializer.validated_data
+                
+                updated_evince = HSERiskEvinceService.manager_assignment(
+                    evince, request.user, assignment_data
+                )
+                
+                from api.serializers.hse_risk_serializers import HSERiskEvinceSerializer
+                response_serializer = HSERiskEvinceSerializer(updated_evince)
+                return Response(response_serializer.data)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='hse-risk-lims-completion')
+    def hse_risk_lims_completion(self, request, pk=None):
+        """LIMS completion callback"""
+        try:
+            from api.services.hse_risk_evince_service import HSERiskEvinceService
+            from api.serializers.hse_risk_serializers import HSERiskLIMSCompletionSerializer
+            
+            evince = self.get_object()
+            if evince.evince_type != 'hse_risk_management':
+                return Response({'error': 'Invalid evince type'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer = HSERiskLIMSCompletionSerializer(data=request.data)
+            if serializer.is_valid():
+                lims_data = serializer.validated_data
+                
+                updated_evince = HSERiskEvinceService.lims_completion(evince, lims_data)
+                
+                from api.serializers.hse_risk_serializers import HSERiskEvinceSerializer
+                response_serializer = HSERiskEvinceSerializer(updated_evince)
+                return Response(response_serializer.data)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='hse-risk-manager-approval')
+    def hse_risk_manager_approval(self, request, pk=None):
+        """Manager approval of LIMS results"""
+        try:
+            from api.services.hse_risk_evince_service import HSERiskEvinceService
+            from api.serializers.hse_risk_serializers import HSERiskManagerApprovalSerializer
+            
+            evince = self.get_object()
+            if evince.evince_type != 'hse_risk_management':
+                return Response({'error': 'Invalid evince type'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer = HSERiskManagerApprovalSerializer(data=request.data)
+            if serializer.is_valid():
+                approval_data = serializer.validated_data
+                
+                updated_evince = HSERiskEvinceService.manager_approval(
+                    evince, request.user, approval_data
+                )
+                
+                from api.serializers.hse_risk_serializers import HSERiskEvinceSerializer
+                response_serializer = HSERiskEvinceSerializer(updated_evince)
+                return Response(response_serializer.data)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['get'], url_path='hse-risk-workflow-states')
+    def hse_risk_workflow_states(self, request, pk=None):
+        """Get HSE Risk workflow states and transitions"""
+        try:
+            from api.services.hse_risk_evince_service import HSERiskEvinceService
+            
+            evince = self.get_object()
+            if evince.evince_type != 'hse_risk_management':
+                return Response({'error': 'Invalid evince type'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            workflow_data = {
+                'current_status': evince.status,
+                'available_transitions': HSERiskEvinceService.HSE_RISK_TRANSITIONS.get(evince.status, []),
+                'workflow_states': HSERiskEvinceService.HSE_RISK_WORKFLOW_STATES
+            }
+            
+            return Response(workflow_data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

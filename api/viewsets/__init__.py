@@ -31,3 +31,5 @@ from .read_emirates_id import ReadEmiratesId
 from .document import DocumentViewSet
 from .sample import SampleViewSet
 from .maintenance_result import MaintenanceResultViewSet
+from .hse_risk_assessment import HSERiskAssessmentViewSet
+from .external_departments import ExternalDepartmentViewSet

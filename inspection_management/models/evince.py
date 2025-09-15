@@ -13,6 +13,13 @@ class Evince(models.Model):
         ("Approved", "Approved"),
         ("Rejected", "Rejected"),
         ("Reassigned", "Reassigned"),
+        # HSE Risk Management specific statuses
+        ("InspectorReview", "Inspector Review"),
+        ("RiskValidated", "Risk Validated"),
+        ("ManagerAssignment", "Manager Assignment"),
+        ("LIMSInProgress", "LIMS In Progress"),
+        ("LIMSCompleted", "LIMS Completed"),
+        ("ManagerApproval", "Manager Approval"),
     ]
 
     EVINCE_TYPE_CHOICES = [
@@ -20,6 +27,7 @@ class Evince(models.Model):
         ("hse_observation", "HSE Observation"),
         ("maintenance", "Maintenance Check"),
         ("compliance", "Compliance Audit"),
+        ("hse_risk_management", "HSE Risk Management"),
     ]
     name = models.CharField(max_length=255, unique=True, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
@@ -84,6 +92,33 @@ class Evince(models.Model):
     compliance_documentation_required = models.BooleanField(default=False, help_text="Whether documentation is required")
     compliance_corrective_action = models.BooleanField(default=False, help_text="Whether corrective action is required")
 
+    # HSE Risk Management specific fields (only used when evince_type = 'hse_risk_management')
+    hse_risk_assessment = models.JSONField(default=dict, blank=True, help_text="Inspector's risk assessment data")
+    hse_risk_notes = models.TextField(blank=True, null=True, help_text="Risk assessment notes from inspector")
+    hse_risk_level = models.CharField(max_length=20, blank=True, null=True, choices=[
+        ('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High'), ('CRITICAL', 'Critical')
+    ], help_text="Risk level assessment")
+    hse_risk_category = models.CharField(max_length=50, blank=True, null=True, help_text="Risk category")
+    hse_inspection_date = models.DateTimeField(blank=True, null=True, help_text="Date of inspection")
+    hse_lims_reference_id = models.CharField(max_length=100, blank=True, null=True, help_text="Reference ID from LIMS system")
+    hse_lims_status = models.CharField(max_length=50, blank=True, null=True, help_text="Status from LIMS system")
+    hse_investigation_details = models.TextField(blank=True, null=True, help_text="Investigation details from LIMS")
+    hse_mitigation_actions = models.TextField(blank=True, null=True, help_text="Mitigation actions taken")
+    hse_approved_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="hse_risk_approved", null=True, blank=True, help_text="Manager who approved the investigation")
+    hse_approved_at = models.DateTimeField(blank=True, null=True, help_text="Date of approval")
+    
+    # Additional HSE Risk Workflow fields
+    hse_risk_valid = models.BooleanField(default=False, help_text="Whether risk assessment is valid")
+    hse_out_of_spec_results = models.JSONField(default=list, blank=True, help_text="List of out-of-spec parameter results")
+    hse_observation_details = models.TextField(blank=True, null=True, help_text="Inspector's observation details")
+    hse_mitigation_department = models.ForeignKey(BusinessUnit, on_delete=models.CASCADE, related_name="hse_mitigation_assignments", null=True, blank=True, help_text="Department assigned for mitigation")
+    hse_mitigation_assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="hse_mitigation_assignments", null=True, blank=True, help_text="User assigned for mitigation work")
+    hse_mitigation_target_date = models.DateTimeField(blank=True, null=True, help_text="Target date for mitigation completion")
+    hse_mitigation_evidence = models.TextField(blank=True, null=True, help_text="Evidence submitted by mitigation department")
+    hse_mitigation_completed = models.BooleanField(default=False, help_text="Whether mitigation work is completed")
+    hse_risk_closed = models.BooleanField(default=False, help_text="Whether risk observation is closed")
+    hse_risk_rejection_reason = models.TextField(blank=True, null=True, help_text="Reason for risk rejection if not valid")
+
     @classmethod
     def get_status_labels(cls):
         return dict(cls.STATUS_CHOICES)
@@ -104,5 +139,19 @@ class Evince(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        self.name = f"{self.inspection_point.business_unit.name}_{self.inspection_point.name}_{self.pk}"
+        # Generate unique name after saving to get the pk
+        is_new = self.pk is None
         super().save(*args, **kwargs)
+        
+        if is_new and (not self.name or self.name.endswith('_None')):
+            # Generate unique name with timestamp to avoid conflicts
+            from django.utils import timezone
+            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+            self.name = f"{self.inspection_point.business_unit.name}_{self.inspection_point.name}_{self.pk}_{timestamp}"
+            # Update name directly in database to avoid another save call
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE inspection_management_evince SET name = %s WHERE id = %s",
+                    [self.name, self.pk]
+                )
