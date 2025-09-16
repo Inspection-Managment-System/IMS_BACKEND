@@ -178,12 +178,40 @@ class EvinceViewSet(viewsets.ModelViewSet):
         )
 
     def create_inspection_tests_and_results(self, evince, is_update=False):
-        if is_update:
-            InspectionTest.objects.filter(evince=evince).delete()
-            InspectionResult.objects.filter(evince=evince).delete()
+        print(f"=== CREATE INSPECTION TESTS AND RESULTS ===")
+        print(f"Evince ID: {evince.id}")
+        print(f"Is Update: {is_update}")
+        print(f"Evince Type: {evince.evince_type}")
+        print(f"Caller: {self.__class__.__name__}")
         
+        if is_update:
+            # For updates, check if we need to recreate
+            existing_tests = InspectionTest.objects.filter(evince=evince)
+            existing_analyses = set(existing_tests.values_list('inspection_analysis_id', flat=True))
+            current_analyses = set(evince.inspection_analyses.values_list('id', flat=True))
+            
+            # Only recreate if the inspection analyses have actually changed
+            if existing_analyses != current_analyses:
+                print(f"=== INSPECTION ANALYSES CHANGED - Recreating results ===")
+                print(f"Existing analyses: {existing_analyses}")
+                print(f"Current analyses: {current_analyses}")
+                InspectionTest.objects.filter(evince=evince).delete()
+                InspectionResult.objects.filter(evince=evince).delete()
+            else:
+                print(f"=== INSPECTION ANALYSES UNCHANGED - Preserving existing results ===")
+                return  # Don't recreate if analyses haven't changed
+        else:
+            # For creation, check if results already exist (prevent duplicates)
+            existing_results = InspectionResult.objects.filter(evince=evince)
+            if existing_results.exists():
+                print(f"=== INSPECTION RESULTS ALREADY EXIST - Skipping creation ===")
+                print(f"Found {existing_results.count()} existing results")
+                return  # Don't create duplicates
+        
+        print(f"=== CREATING NEW INSPECTION RESULTS ===")
         # Create one inspection test per inspection analysis
         for inspection_analysis in evince.inspection_analyses.all():
+            print(f"Creating test for analysis: {inspection_analysis.name}")
             inspection_test = InspectionTest.objects.create(
                 evince=evince,
                 inspection_analysis=inspection_analysis,
@@ -192,12 +220,18 @@ class EvinceViewSet(viewsets.ModelViewSet):
             
             # Create one inspection result per parameter in this inspection analysis
             parameters = Parameter.objects.filter(inspection_analysis=inspection_analysis)
+            print(f"Found {parameters.count()} parameters for analysis: {inspection_analysis.name}")
             for parameter in parameters:
+                print(f"Creating result for parameter: {parameter.name}")
                 InspectionResult.objects.create(
                     evince=evince,
                     inspection_test=inspection_test,
                     changed_by=evince.changed_by,
                 )
+        
+        # Verify final count
+        final_results = InspectionResult.objects.filter(evince=evince)
+        print(f"=== FINAL RESULT COUNT: {final_results.count()} ===")
 
     def update(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -320,6 +354,16 @@ class EvinceViewSet(viewsets.ModelViewSet):
         inspection_results = InspectionResult.objects.filter(evince_id=pk).select_related(
             "inspection_test__inspection_analysis"
         )
+        print(f"=== DEBUG: Fetching results for evince {pk} ===")
+        print(f"Found {inspection_results.count()} inspection results")
+        for result in inspection_results:
+            print(f"Result {result.id}: entered_value='{result.entered_value}', status='{result.status}'")
+        
+        # Also check the raw database values
+        raw_results = InspectionResult.objects.filter(evince_id=pk)
+        print(f"=== RAW DATABASE CHECK ===")
+        for raw_result in raw_results:
+            print(f"Raw Result {raw_result.id}: entered_value='{raw_result.entered_value}', status='{raw_result.status}'")
         
         # Get all parameters for the inspection analyses in this evince
         related_parameters = Parameter.objects.filter(
@@ -351,6 +395,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
                 "changed_on": result.changed_on,
                 "changed_by": result.changed_by.id,
             }
+            print(f"DEBUG: Constructing result_data for {result.id}: entered_value='{result.entered_value}', type={type(result.entered_value)}")
             results_with_parameters.append(result_data)
 
         return Response(

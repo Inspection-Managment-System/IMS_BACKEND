@@ -2,6 +2,7 @@ from rest_framework import serializers
 from inspection_management.models import Evince, BusinessUnit, InspectionAnalysis, InspectionPoint
 from users.models import User
 from api.serializers import UserSerializer, BusinessUnitSerializer, InspectionAnalysisSerializer, InspectionPointSerializer
+from api.serializers import RelatedFieldSerializer, ManyToManyRelatedFieldSerializer
 
 
 class HSERiskAssessmentSerializer(serializers.ModelSerializer):
@@ -107,26 +108,63 @@ class HSERiskAssessmentSerializer(serializers.ModelSerializer):
 
 
 class HSERiskAssessmentCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating HSE Risk Assessment - similar to regular inspection creation"""
+    """Serializer for creating HSE Risk Assessment - same as regular inspection creation"""
+    
+    # Use the same field types as regular inspection
+    inspection_point = RelatedFieldSerializer(
+        queryset=InspectionPoint.objects.all(), serializer=InspectionPointSerializer
+    )
+    inspection_analyses = ManyToManyRelatedFieldSerializer(
+        queryset=InspectionAnalysis.objects.all(), serializer=InspectionAnalysisSerializer
+    )
+    assigned_to = RelatedFieldSerializer(
+        queryset=User.objects.all(), serializer=UserSerializer, required=False
+    )
+    reviewed_by = RelatedFieldSerializer(queryset=User.objects.all(), serializer=UserSerializer)
+    
+    # Custom fields for frontend data that don't exist on the model
+    company = serializers.CharField(write_only=True, required=False)
+    site = serializers.CharField(write_only=True, required=False)
+    analysis_type = serializers.CharField(write_only=True, required=False)
+    inspection_analysis = serializers.CharField(write_only=True, required=False)
+    parameters = serializers.ListField(write_only=True, required=False)
+    sample_required = serializers.BooleanField(write_only=True, required=False)
+    sample_content = serializers.JSONField(write_only=True, required=False)
     
     class Meta:
         model = Evince
         fields = [
-            'description', 'business_unit', 'inspection_point', 'assigned_to',
-            'reviewed_by', 'changed_by', 'logged_by', 'start_date_time', 'end_date_time',
-            'inspection_analyses', 'crtical_instructions', 'crtical_instructions_file_name',
-            'reassigned'
+            'description', 'business_unit', 'inspection_point', 'inspection_analyses',
+            'assigned_to', 'reviewed_by', 'changed_by', 'logged_by', 
+            'start_date_time', 'end_date_time', 'crtical_instructions', 
+            'crtical_instructions_file_name', 'reassigned',
+            # Custom fields that are write_only
+            'company', 'site', 'analysis_type', 'inspection_analysis', 'parameters',
+            'sample_required', 'sample_content'
         ]
         extra_kwargs = {
-            'changed_by': {'required': False},
+            'changed_by': {'required': True},
             'logged_by': {'required': False},
-            'reviewed_by': {'required': False}
+            'reviewed_by': {'required': True},
+            'business_unit': {'required': True},
+            'inspection_point': {'required': True},
+            'assigned_to': {'required': False},  # Make assigned_to optional
+            'inspection_analyses': {'required': False}
         }
     
     def create(self, validated_data):
         """Create HSE Risk Assessment with default values"""
-        # Extract inspection_analyses before creating the instance
+        # Extract fields that need special handling
         inspection_analyses = validated_data.pop('inspection_analyses', [])
+        parameters = validated_data.pop('parameters', [])
+        
+        # Extract custom fields that don't exist on the model
+        company = validated_data.pop('company', None)
+        site = validated_data.pop('site', None)
+        analysis_type = validated_data.pop('analysis_type', None)
+        inspection_analysis = validated_data.pop('inspection_analysis', None)
+        sample_required = validated_data.pop('sample_required', None)
+        sample_content = validated_data.pop('sample_content', None)
         
         # Set default values for HSE Risk Assessment
         validated_data['evince_type'] = 'hse_risk_management'
@@ -138,6 +176,24 @@ class HSERiskAssessmentCreateSerializer(serializers.ModelSerializer):
         # Add inspection_analyses after creation
         if inspection_analyses:
             instance.inspection_analyses.set(inspection_analyses)
+        
+        # Store parameters for later use (they will be used to create inspection tests and results)
+        if parameters:
+            instance._parameters_data = parameters
+        
+        # Store custom fields for later use if needed
+        if company:
+            instance._company_data = company
+        if site:
+            instance._site_data = site
+        if analysis_type:
+            instance._analysis_type_data = analysis_type
+        if inspection_analysis:
+            instance._inspection_analysis_data = inspection_analysis
+        if sample_required is not None:
+            instance._sample_required_data = sample_required
+        if sample_content:
+            instance._sample_content_data = sample_content
         
         return instance
 

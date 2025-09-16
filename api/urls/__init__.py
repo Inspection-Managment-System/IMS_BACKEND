@@ -32,6 +32,7 @@ from api.viewsets import (
 from api.viewsets.hse_result import HSEResultViewSet
 from api.viewsets.maintenance_result import MaintenanceResultViewSet
 from api.viewsets.hse_risk_assessment import HSERiskAssessmentViewSet
+from api.viewsets.hse_risk_assessment_result import HSERiskAssessmentResultViewSet
 from api.viewsets.external_departments import ExternalDepartmentViewSet
 
 router = DefaultRouter()
@@ -63,6 +64,7 @@ router.register(
 router.register(r"hse_results", HSEResultViewSet, basename="hse_results")
 router.register(r"maintenance_results", MaintenanceResultViewSet, basename="maintenance_results")
 router.register(r"hse_risk_assessments", HSERiskAssessmentViewSet, basename="hse_risk_assessments")
+router.register(r"hse_risk_assessment_results", HSERiskAssessmentResultViewSet, basename="hse_risk_assessment_results")
 router.register(r"external_departments", ExternalDepartmentViewSet, basename="external_departments")
 router.register(r"admin_charts", AdminChartsViewSet, basename="admin_charts")
 router.register(

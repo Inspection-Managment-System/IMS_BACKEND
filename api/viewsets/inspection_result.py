@@ -17,12 +17,19 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         Allows the user to update the entered_value and optional comments,
         and marks the status as 'Completed'.
         """
+        print(f"=== DEBUG: Updating inspection result {pk} ===")
+        print(f"Request data: {request.data}")
+        
         inspection_result = get_object_or_404(InspectionResult, pk=pk)
+        print(f"Found inspection result: {inspection_result.id}, evince: {inspection_result.evince.id}")
+        
         entered_value = request.data.get("entered_value", None)
         comments = request.data.get("comments", "")
         attachment_name = request.data.get("attachment_name", "")
         attachment = request.data.get("attachment", "")
         sample_required = request.data.get("sample_required", False)
+        
+        print(f"entered_value: '{entered_value}', comments: '{comments}'")
         if sample_required:
             inspection_result.sample_required = True
             inspection_result.sample_content = request.data.get("sample_content", None)
@@ -40,11 +47,25 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         inspection_result.comments = comments
         inspection_result.status = "Completed"
 
+        # Check if the entered value is out of spec
+        inspection_result.is_out_of_spec = False
+        if entered_value and inspection_result.inspection_test.inspection_analysis.parameter_set.exists():
+            parameter = inspection_result.inspection_test.inspection_analysis.parameter_set.first()
+            if parameter.min_value is not None and parameter.max_value is not None:
+                try:
+                    numeric_value = float(entered_value)
+                    if numeric_value < parameter.min_value or numeric_value > parameter.max_value:
+                        inspection_result.is_out_of_spec = True
+                except (ValueError, TypeError):
+                    # If it's not a numeric value, it's not out of spec
+                    pass
+
         if attachment and attachment_name:
             inspection_result.attachment_name = attachment_name
             inspection_result.attachment = attachment
 
         inspection_result.save()
+        print(f"Saved inspection result: entered_value='{inspection_result.entered_value}', status='{inspection_result.status}'")
 
         return Response(
             {"message": "Inspection result updated successfully."},

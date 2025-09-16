@@ -5,15 +5,16 @@ from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from django.utils import timezone
 
-from inspection_management.models import Evince
+from inspection_management.models import Evince, BusinessUnit, InspectionAnalysis, InspectionPoint
 from api.serializers.hse_risk_assessment import (
     HSERiskAssessmentSerializer,
     HSERiskAssessmentCreateSerializer,
     HSERiskAssessmentUpdateSerializer
 )
+from api.viewsets.evince import EvinceViewSet
 
 
-class HSERiskAssessmentViewSet(viewsets.ModelViewSet):
+class HSERiskAssessmentViewSet(EvinceViewSet):
     """ViewSet for HSE Risk Assessment workflow"""
     
     queryset = Evince.objects.filter(evince_type='hse_risk_management')
@@ -26,6 +27,66 @@ class HSERiskAssessmentViewSet(viewsets.ModelViewSet):
         elif self.action in ['update', 'partial_update']:
             return HSERiskAssessmentUpdateSerializer
         return HSERiskAssessmentSerializer
+    
+    def list(self, request, *args, **kwargs):
+        """Override list method to handle HSE-specific filtering without user_id dependency"""
+        user = request.user
+        queryset = self.queryset
+        
+        # Filter by status if provided
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Filter by risk level if provided
+        risk_level = request.query_params.get('risk_level')
+        if risk_level:
+            queryset = queryset.filter(hse_risk_level=risk_level)
+        
+        # Filter by assigned user if provided
+        assigned_to = request.query_params.get('assigned_to')
+        if assigned_to:
+            queryset = queryset.filter(assigned_to_id=assigned_to)
+        
+        # Filter by mitigation department if provided
+        mitigation_dept = request.query_params.get('mitigation_department')
+        if mitigation_dept:
+            queryset = queryset.filter(hse_mitigation_department_id=mitigation_dept)
+        
+        # Role-based filtering
+        if hasattr(user, 'userprofile') and user.userprofile.role:
+            role = user.userprofile.role.name.upper()
+            if role == 'ADMIN':
+                # Admin can see all HSE risk assessments
+                pass
+            elif role == 'MANAGER':
+                # Manager can see assessments for their data groups
+                user_data_groups = user.userprofile.data_groups.all()
+                queryset = queryset.filter(
+                    Q(business_unit__group__in=user_data_groups) |
+                    Q(hse_mitigation_department__group__in=user_data_groups)
+                )
+            elif role == 'INSPECTOR':
+                # Inspector can see assessments assigned to them
+                queryset = queryset.filter(
+                    Q(assigned_to=user) |
+                    Q(hse_mitigation_assigned_to=user)
+                )
+            else:
+                # Other users can only see assessments assigned to them
+                queryset = queryset.filter(
+                    Q(assigned_to=user) |
+                    Q(hse_mitigation_assigned_to=user)
+                )
+        
+        # Apply pagination and return response
+        page = self.paginate_queryset(queryset.order_by('-changed_on'))
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(queryset.order_by('-changed_on'), many=True)
+        return Response(serializer.data)
     
     def get_queryset(self):
         """Filter queryset based on user role and permissions"""
@@ -80,66 +141,95 @@ class HSERiskAssessmentViewSet(viewsets.ModelViewSet):
         
         return queryset.order_by('-changed_on')
     
-    def perform_create(self, serializer):
-        """Set created_by to current user and create inspection tests"""
-        evince = serializer.save(changed_by=self.request.user)
-        # Create inspection tests and results for the evince (async or on-demand)
-        # Only create if inspection_analyses are provided and create_tests is True
-        create_tests = self.request.data.get('create_tests', True)
-        if create_tests and evince.inspection_analyses.exists():
-            self.create_inspection_tests_and_results(evince)
+    def preprocess_data(self, data):
+        """Convert names to IDs for related fields - same as regular evince viewset"""
+        if "business_unit" in data:
+            business_unit_value = data.get("business_unit")
+            # Handle both ID and name
+            if isinstance(business_unit_value, (int, str)) and str(business_unit_value).isdigit():
+                # It's already an ID
+                data["business_unit"] = int(business_unit_value)
+            else:
+                # It's a name, convert to ID
+                try:
+                    data["business_unit"] = BusinessUnit.objects.get(name=business_unit_value).id
+                except BusinessUnit.DoesNotExist:
+                    pass
+                    
+        if "inspection_point" in data:
+            inspection_point_value = data.get("inspection_point")
+            # Handle both ID and name
+            if isinstance(inspection_point_value, (int, str)) and str(inspection_point_value).isdigit():
+                # It's already an ID
+                data["inspection_point"] = int(inspection_point_value)
+            else:
+                # It's a name, convert to ID
+                try:
+                    data["inspection_point"] = InspectionPoint.objects.get(
+                        name=inspection_point_value
+                    ).id
+                except InspectionPoint.DoesNotExist:
+                    pass
+                    
+        if "inspection_analyses" in data:
+            inspection_analysis_values = data.get("inspection_analyses")
+            if isinstance(inspection_analysis_values, list):
+                for index, inspection_analysis_value in enumerate(inspection_analysis_values):
+                    # Handle both ID and name
+                    if isinstance(inspection_analysis_value, (int, str)) and str(inspection_analysis_value).isdigit():
+                        # It's already an ID
+                        data["inspection_analyses"][index] = int(inspection_analysis_value)
+                    else:
+                        # It's a name, convert to ID
+                        try:
+                            data["inspection_analyses"][index] = InspectionAnalysis.objects.get(
+                                name=inspection_analysis_value
+                            ).id
+                        except InspectionAnalysis.DoesNotExist:
+                            pass
+
+        return data
+    
     
     def create(self, request, *args, **kwargs):
-        """Override create to return full detailed response"""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        
-        # Return the full detailed response using the main serializer
-        detailed_serializer = HSERiskAssessmentSerializer(serializer.instance, context={'request': request})
-        headers = self.get_success_headers(detailed_serializer.data)
-        return Response(detailed_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        """Override create to return full detailed response - completely override parent logic"""
+        try:
+            data = request.data.copy()
+            print(f"Original HSE data: {data}")
+            
+            data = self.preprocess_data(data)
+            print(f"Preprocessed HSE data: {data}")
+
+            serializer = self.get_serializer(data=data)
+            if not serializer.is_valid():
+                print(f"HSE Serializer errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create the instance using the serializer
+            evince = serializer.save(changed_by=request.user)
+            evince.save()
+            
+            # Debug: Check inspection analyses before creating tests and results
+            print(f"HSE evince {evince.id} inspection_analyses count: {evince.inspection_analyses.count()}")
+            for analysis in evince.inspection_analyses.all():
+                print(f"  - Analysis: {analysis.name} (ID: {analysis.id})")
+                params = analysis.parameter_set.all()
+                print(f"    Parameters: {params.count()}")
+                for param in params:
+                    print(f"      - {param.name}")
+            
+            # Create inspection tests and results ONLY ONCE
+            print(f"Creating inspection tests and results for HSE evince {evince.id}")
+            self.create_inspection_tests_and_results(evince, is_update=False)
+            
+            # Return the full detailed response using the main serializer
+            detailed_serializer = HSERiskAssessmentSerializer(evince, context={'request': request})
+            headers = self.get_success_headers(detailed_serializer.data)
+            return Response(detailed_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except Exception as e:
+            print(f"Error in HSE create method: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
-    def create_inspection_tests_and_results(self, evince):
-        """Create inspection tests and results for the evince - optimized version"""
-        from inspection_management.models import InspectionTest, InspectionResult, Parameter
-        
-        # Bulk create inspection tests
-        inspection_tests = []
-        for inspection_analysis in evince.inspection_analyses.all():
-            inspection_tests.append(InspectionTest(
-                evince=evince,
-                inspection_analysis=inspection_analysis,
-                changed_by=evince.changed_by,
-            ))
-        
-        if inspection_tests:
-            InspectionTest.objects.bulk_create(inspection_tests)
-            
-            # Get all parameters for all inspection analyses at once
-            analysis_ids = [test.inspection_analysis.id for test in inspection_tests]
-            parameters = Parameter.objects.filter(inspection_analysis_id__in=analysis_ids)
-            
-            # Create parameter lookup for efficient mapping
-            param_lookup = {}
-            for param in parameters:
-                if param.inspection_analysis.id not in param_lookup:
-                    param_lookup[param.inspection_analysis.id] = []
-                param_lookup[param.inspection_analysis.id].append(param)
-            
-            # Bulk create inspection results
-            inspection_results = []
-            for test in inspection_tests:
-                test_params = param_lookup.get(test.inspection_analysis.id, [])
-                for parameter in test_params:
-                    inspection_results.append(InspectionResult(
-                        evince=evince,
-                        inspection_test=test,
-                        changed_by=evince.changed_by,
-                    ))
-            
-            if inspection_results:
-                InspectionResult.objects.bulk_create(inspection_results)
     
     @action(detail=False, methods=['get'], url_path='dashboard-stats')
     def dashboard_stats(self, request):

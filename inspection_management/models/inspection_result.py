@@ -23,6 +23,7 @@ class InspectionResult(models.Model):
     attachment = models.TextField(blank=True, null=True)
     sample_required = models.BooleanField(default=False)
     sample_content = models.JSONField(blank=True, null=True)
+    is_out_of_spec = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.evince.name}_{self.inspection_test.pk}_{self.pk}"

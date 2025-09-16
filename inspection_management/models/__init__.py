@@ -11,7 +11,7 @@ from .unit import Unit
 from .inspection_analysis import InspectionAnalysis
 from .parameter import Parameter
 from .inspection_point import InspectionPoint
-from .evince import Evince
+from .evince import Evince, HSERiskAssessmentResult
 from .inspection_test import InspectionTest
 from .inspection_result import InspectionResult
 from .planner import Planner

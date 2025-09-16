@@ -155,3 +155,73 @@ class Evince(models.Model):
                     "UPDATE inspection_management_evince SET name = %s WHERE id = %s",
                     [self.name, self.pk]
                 )
+
+
+class HSERiskAssessmentResult(models.Model):
+    """
+    Model to store HSE Risk Assessment parameter results and risk assessment data
+    """
+    evince = models.ForeignKey(Evince, on_delete=models.CASCADE, related_name='hse_risk_assessment_results')
+    
+    # Parameter details
+    parameter_name = models.CharField(max_length=255)
+    parameter_value = models.TextField(null=True, blank=True)
+    parameter_comments = models.TextField(null=True, blank=True)
+    parameter_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('Incomplete', 'Incomplete'),
+            ('Completed', 'Completed'),
+        ],
+        default='Incomplete'
+    )
+    
+    # Risk Assessment details
+    risk_level = models.CharField(
+        max_length=20,
+        choices=[
+            ('LOW', 'Low'),
+            ('MEDIUM', 'Medium'),
+            ('HIGH', 'High'),
+            ('CRITICAL', 'Critical'),
+        ],
+        null=True,
+        blank=True
+    )
+    
+    risk_category = models.CharField(
+        max_length=50,
+        choices=[
+            ('Equipment', 'Equipment'),
+            ('Safety', 'Safety'),
+            ('Environmental', 'Environmental'),
+            ('Process', 'Process'),
+        ],
+        null=True,
+        blank=True
+    )
+    
+    risk_notes = models.TextField(null=True, blank=True)
+    observation_details = models.TextField(null=True, blank=True)
+    risk_valid = models.BooleanField(null=True, blank=True)
+    
+    # Mitigation details
+    mitigation_actions = models.TextField(null=True, blank=True)
+    mitigation_target_date = models.DateField(null=True, blank=True)
+    mitigation_evidence = models.TextField(null=True, blank=True)
+    mitigation_completed = models.BooleanField(default=False)
+    risk_closed = models.BooleanField(default=False)
+    
+    # Audit fields
+    created_on = models.DateTimeField(auto_now_add=True)
+    changed_on = models.DateTimeField(auto_now=True)
+    changed_by = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    
+    class Meta:
+        db_table = 'inspection_management_hseriskassessmentresult'
+        verbose_name = 'HSE Risk Assessment Result'
+        verbose_name_plural = 'HSE Risk Assessment Results'
+        ordering = ['-created_on']
+    
+    def __str__(self):
+        return f"HSE Risk Assessment {self.evince.id} - {self.parameter_name}"
