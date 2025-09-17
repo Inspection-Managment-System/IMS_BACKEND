@@ -129,17 +129,47 @@ class HSERiskEvinceService:
         if evince.evince_type != 'hse_risk_management':
             raise ValueError("Invalid evince type for HSE Risk review")
         
-        if evince.status != 'InspectorReview':
+        if evince.status not in ['Logged', 'InspectorReview']:
             raise ValueError(f"Invalid status for inspector review: {evince.status}")
         
         # Update risk assessment data
         evince.hse_risk_assessment = risk_assessment_data
         evince.hse_risk_notes = risk_assessment_data.get('notes', '')
-        evince.hse_risk_level = risk_assessment_data.get('risk_level', 'LOW')
+        evince.hse_risk_valid = risk_assessment_data.get('risk_valid', True)
         evince.reviewed_by = user
         
-        # Transition to RiskValidated
-        HSERiskEvinceService.transition_status(evince, 'RiskValidated', user, 'Risk assessment completed by inspector')
+        # Check for out-of-spec results
+        out_of_spec_results = risk_assessment_data.get('out_of_spec_results', [])
+        evince.hse_out_of_spec_results = out_of_spec_results
+        
+        # Check if there are out-of-spec results
+        if out_of_spec_results and len(out_of_spec_results) > 0:
+            # Out-of-spec results found - set risk level and assign to manager for mitigation
+            evince.hse_risk_level = 'HIGH'  # Set risk level for out-of-spec results
+            HSERiskEvinceService.transition_status(evince, 'ManagerAssignment', user, 'Out-of-spec results found - assigned to manager for mitigation')
+            
+            # Try to find a manager for the business unit
+            try:
+                from users.models.user import User
+                from django.contrib.auth.models import Group
+                
+                # Get the Manager group
+                manager_group = Group.objects.filter(name='Manager').first()
+                if manager_group:
+                    manager = User.objects.filter(
+                        userprofile__role=manager_group,
+                        userprofile__data_groups__in=[evince.business_unit.group]
+                    ).first()
+                    
+                    if manager:
+                        evince.reviewed_by = manager  # Assign to manager for review
+                        evince.save()
+            except Exception as e:
+                print(f"Warning: Could not auto-assign to manager: {e}")
+        else:
+            # No out-of-spec results - set risk level and stay in InspectorReview for inspector to close
+            evince.hse_risk_level = 'No Risk Validated'  # Set risk level for no risk
+            HSERiskEvinceService.transition_status(evince, 'InspectorReview', user, 'No out-of-spec results - inspector can close assessment')
         
         return evince
     
@@ -156,8 +186,38 @@ class HSERiskEvinceService:
         if assignment_data.get('assigned_to_id'):
             evince.assigned_to_id = assignment_data['assigned_to_id']
         
-        # Transition to LIMSInProgress
-        HSERiskEvinceService.transition_status(evince, 'LIMSInProgress', user, 'Assigned to LIMS for investigation')
+        # Handle external department assignment
+        if assignment_data.get('external_department_id'):
+            try:
+                from inspection_management.models.external_departments import ExternalDepartment, ExternalDepartmentAssignment
+                external_dept = ExternalDepartment.objects.get(id=assignment_data['external_department_id'])
+                
+                # Update evince with external department assignment
+                evince.hse_mitigation_department = external_dept.business_unit
+                evince.hse_mitigation_assigned_to = user  # Manager who assigned
+                evince.hse_mitigation_actions = assignment_data.get('mitigation_plan', '')
+                evince.hse_mitigation_target_date = assignment_data.get('target_date')
+                
+                # Create external department assignment record
+                ExternalDepartmentAssignment.objects.create(
+                    evince=evince,
+                    external_department=external_dept,
+                    assigned_by=user,
+                    target_completion_date=assignment_data.get('target_date'),
+                    notes=assignment_data.get('mitigation_plan', ''),
+                    status='ASSIGNED'
+                )
+                
+                # Transition to LIMSInProgress
+                HSERiskEvinceService.transition_status(evince, 'LIMSInProgress', user, f'Assigned to {external_dept.name} for mitigation')
+                
+            except Exception as e:
+                print(f"Error assigning to external department: {e}")
+                # Fallback to regular assignment
+                HSERiskEvinceService.transition_status(evince, 'LIMSInProgress', user, 'Assigned for investigation')
+        else:
+            # Regular assignment without external department
+            HSERiskEvinceService.transition_status(evince, 'LIMSInProgress', user, 'Assigned for investigation')
         
         return evince
     

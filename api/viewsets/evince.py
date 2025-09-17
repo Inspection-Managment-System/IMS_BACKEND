@@ -42,6 +42,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
         count = request.query_params.get("count", None)
         managed_by = request.query_params.get("managed_by", None)
         inspected_by = request.query_params.get("inspected_by", None)
+        evince_type = request.query_params.get("evince_type", None)
 
         filters = Q()
         if user_id:
@@ -71,7 +72,7 @@ class EvinceViewSet(viewsets.ModelViewSet):
             filters &= Q(reviewed_by__username=managed_by)
         if inspected_by:
             filters &= Q(assigned_to__username=inspected_by)
-
+        # evince_type filtering is handled in get_queryset() method
 
         user = User.objects.get(id=user_id)
         user_profile = user.userprofile
@@ -80,14 +81,17 @@ class EvinceViewSet(viewsets.ModelViewSet):
         elif user_profile.role.name == "Inspector":
             filters &= Q(assigned_to=user)
         
+        # Use the queryset from get_queryset() which includes evince_type filtering
+        base_queryset = self.get_queryset()
         filtered_queryset = (
-            self.queryset.filter(filters).distinct() if filters else self.queryset.all()
+            base_queryset.filter(filters).distinct() if filters else base_queryset.all()
         )
         if count and count.lower() == "true":
             
             response_data = {"statuses": [], "dayscount": []}
 
-            status_labels = Evince.get_status_labels()
+            # Get status labels filtered by evince_type
+            status_labels = Evince.get_status_labels_by_type(evince_type)
             for key, value in status_labels.items():
                 evinces_count = filtered_queryset.filter(status=key).count()
                 response_data["statuses"].append(
@@ -414,6 +418,8 @@ class EvinceViewSet(viewsets.ModelViewSet):
         old_status = evince.status
         status_to_update = request.data.get("status")
 
+        print(f"🚀 Status Update Request: evince_id={pk}, old_status={old_status}, new_status={status_to_update}, evince_type={evince.evince_type}")
+
         if not status_to_update:
             return Response(
                 {"error": "Status is required."}, status=status.HTTP_400_BAD_REQUEST
@@ -425,6 +431,8 @@ class EvinceViewSet(viewsets.ModelViewSet):
 
         evince.reassigned = True
         evince.save()
+        
+        print(f"✅ Status Update Complete: evince_id={pk}, status={evince.status}")
 
         AuditHistory.objects.create(
             user=request.user,
@@ -621,27 +629,94 @@ This is a HIGH PRIORITY alert that requires your immediate response.
         """
         Handles the status update and relevant InspectionResult modifications.
         """
+        print(f"🔧 handle_status_update called: evince_id={evince.id}, evince_type={evince.evince_type}, status={status_to_update}")
+        
         if status_to_update == "ResultsEntered":
-            self.set_results_entered(evince)
+            # For HSE Risk Management evinces, skip the set_results_entered logic
+            # as the HSE data is already handled by the frontend
+            if evince.evince_type != 'hse_risk_management':
+                self.set_results_entered(evince)
         elif status_to_update == "Rejected":
+            print(f"🔧 Setting evince {evince.id} to Rejected")
             self.set_rejected(evince)
         elif status_to_update == "Reassigned":
+            print(f"🔧 Setting evince {evince.id} to Reassigned")
             self.set_reassigned(evince)
         elif status_to_update == "Approved":
+            print(f"🔧 Setting evince {evince.id} to Approved")
             self.set_approved(evince)
+        elif status_to_update == "Completed":
+            print(f"🔧 Setting evince {evince.id} to Completed")
+            # For HSE Risk Management, Completed means the assessment is finished
+            if evince.evince_type == 'hse_risk_management':
+                evince.hse_risk_closed = True
+                evince.save()
+        elif status_to_update == "LIMSInProgress":
+            print(f"🔧 Setting evince {evince.id} to LIMSInProgress")
+            # For HSE Risk Management, LIMSInProgress means assigned to external department
+            if evince.evince_type == 'hse_risk_management':
+                # Additional logic for external department assignment can be added here
+                pass
 
     def set_results_entered(self, evince):
         InspectionResult.objects.filter(evince=evince).update(status="Completed")
+        
+        # Handle HSE Risk Management evinces
+        if evince.evince_type == 'hse_risk_management':
+            # If HSE data is already set (from frontend submission), don't overwrite it
+            if evince.hse_risk_level and evince.hse_risk_level != '':
+                return
+            
+            from api.services.hse_risk_evince_service import HSERiskEvinceService
+            
+            # Get out-of-spec results from inspection results
+            out_of_spec_results = []
+            for result in InspectionResult.objects.filter(evince=evince):
+                if result.is_out_of_spec:
+                    out_of_spec_results.append({
+                        'parameter_name': result.inspection_test.inspection_analysis.name,
+                        'entered_value': result.entered_value,
+                        'comments': result.comments
+                    })
+            
+            # Create risk assessment data
+            risk_assessment_data = {
+                'out_of_spec_results': out_of_spec_results,
+                'risk_valid': len(out_of_spec_results) > 0,  # Risk is valid only if there are out-of-spec results
+                'notes': f'Results entered by inspector. Out-of-spec results: {len(out_of_spec_results)}'
+            }
+            
+            # Use HSE risk workflow service to handle the transition
+            try:
+                HSERiskEvinceService.inspector_review(evince, evince.changed_by, risk_assessment_data)
+            except Exception as e:
+                print(f"Error in HSE risk workflow: {e}")
+                # Fallback: just update status to InspectorReview
+                evince.status = 'InspectorReview'
+                evince.save()
 
     def set_rejected(self, evince):
         pass
 
     def set_reassigned(self, evince):
+        # Reset inspection results to incomplete status
         inspection_test_results = InspectionResult.objects.filter(evince=evince)
         for result in inspection_test_results:
             result.previous_value = result.entered_value
             result.status = "Incomplete"
             result.save()
+        
+        # For HSE Risk Management, reassign back to the original inspector
+        if evince.evince_type == 'hse_risk_management':
+            # Reassign to the original assigned_to user (inspector)
+            if evince.assigned_to:
+                evince.reviewed_by = evince.assigned_to  # Assign back to inspector
+                evince.changed_by = evince.assigned_to   # Set changed_by to inspector
+                evince.changed_on = timezone.now()
+                evince.save()
+                print(f"🔧 Reassigned HSE evince {evince.id} back to inspector {evince.assigned_to.username}")
+            else:
+                print(f"⚠️ Warning: HSE evince {evince.id} has no assigned_to user for reassignment")
 
     def set_approved(self, evince):
         pass

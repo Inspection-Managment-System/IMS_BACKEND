@@ -96,7 +96,7 @@ class Evince(models.Model):
     hse_risk_assessment = models.JSONField(default=dict, blank=True, help_text="Inspector's risk assessment data")
     hse_risk_notes = models.TextField(blank=True, null=True, help_text="Risk assessment notes from inspector")
     hse_risk_level = models.CharField(max_length=20, blank=True, null=True, choices=[
-        ('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High'), ('CRITICAL', 'Critical')
+        ('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High'), ('CRITICAL', 'Critical'), ('No Risk Validated', 'No Risk Validated')
     ], help_text="Risk level assessment")
     hse_risk_category = models.CharField(max_length=50, blank=True, null=True, help_text="Risk category")
     hse_inspection_date = models.DateTimeField(blank=True, null=True, help_text="Date of inspection")
@@ -122,6 +122,30 @@ class Evince(models.Model):
     @classmethod
     def get_status_labels(cls):
         return dict(cls.STATUS_CHOICES)
+    
+    @classmethod
+    def get_status_labels_by_type(cls, evince_type=None):
+        """Get status labels filtered by evince type"""
+        all_statuses = dict(cls.STATUS_CHOICES)
+        
+        if evince_type == 'inspection':
+            # Only return regular inspection statuses
+            regular_statuses = [
+                "Logged", "ResultsEntered", "Completed", 
+                "Approved", "Rejected", "Reassigned"
+            ]
+            return {k: v for k, v in all_statuses.items() if k in regular_statuses}
+        elif evince_type == 'hse_risk_management':
+            # Only return HSE Risk Management statuses
+            hse_statuses = [
+                "InspectorReview", "RiskValidated", "ManagerAssignment",
+                "LIMSInProgress", "LIMSCompleted", "ManagerApproval", "Completed",
+                "Rejected", "Reassigned"
+            ]
+            return {k: v for k, v in all_statuses.items() if k in hse_statuses}
+        else:
+            # Return all statuses if no type specified
+            return all_statuses
 
     @classmethod
     def get_evince_type_labels(cls):

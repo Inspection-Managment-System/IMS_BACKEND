@@ -11,7 +11,7 @@ def get_evinces_summary_with_details(user):
     previous_month_start = (start_of_month - timedelta(days=1)).replace(day=1)
     previous_month_end = start_of_month - timedelta(days=1)
 
-    evinces = Evince.objects.filter(assigned_to=user)
+    evinces = Evince.objects.filter(assigned_to=user, evince_type="inspection")
 
     current_month_approved = evinces.filter(
         status="Approved", start_date_time__gte=start_of_month
