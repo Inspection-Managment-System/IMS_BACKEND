@@ -144,9 +144,10 @@ class HSERiskEvinceService:
         
         # Check if there are out-of-spec results
         if out_of_spec_results and len(out_of_spec_results) > 0:
-            # Out-of-spec results found - set risk level and assign to manager for mitigation
+            # Out-of-spec results found - set risk level but keep status as RiskValidated
             evince.hse_risk_level = 'HIGH'  # Set risk level for out-of-spec results
-            HSERiskEvinceService.transition_status(evince, 'ManagerAssignment', user, 'Out-of-spec results found - assigned to manager for mitigation')
+            # Don't change status to ManagerAssignment - let manager decide after validation
+            # HSERiskEvinceService.transition_status(evince, 'ManagerAssignment', user, 'Out-of-spec results found - assigned to manager for mitigation')
             
             # Try to find a manager for the business unit
             try:

@@ -17,6 +17,8 @@ class Evince(models.Model):
         ("InspectorReview", "Inspector Review"),
         ("RiskValidated", "Risk Validated"),
         ("ManagerAssignment", "Manager Assignment"),
+        ("MitigationInProgress", "Mitigation In Progress"),
+        ("MitigationCompleted", "Mitigation Completed"),
         ("LIMSInProgress", "LIMS In Progress"),
         ("LIMSCompleted", "LIMS Completed"),
         ("ManagerApproval", "Manager Approval"),
@@ -106,6 +108,7 @@ class Evince(models.Model):
     hse_mitigation_actions = models.TextField(blank=True, null=True, help_text="Mitigation actions taken")
     hse_approved_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="hse_risk_approved", null=True, blank=True, help_text="Manager who approved the investigation")
     hse_approved_at = models.DateTimeField(blank=True, null=True, help_text="Date of approval")
+    hse_manager_decision_final = models.BooleanField(default=False, help_text="Whether manager has made final decision (approve/reject) - prevents external sync from overwriting")
     
     # Additional HSE Risk Workflow fields
     hse_risk_valid = models.BooleanField(default=False, help_text="Whether risk assessment is valid")
@@ -179,6 +182,9 @@ class Evince(models.Model):
                     "UPDATE inspection_management_evince SET name = %s WHERE id = %s",
                     [self.name, self.pk]
                 )
+
+    # Department assignment field
+    assigned_department = models.CharField(max_length=200, blank=True, null=True, help_text="Department assigned for mitigation work")
 
 
 class HSERiskAssessmentResult(models.Model):

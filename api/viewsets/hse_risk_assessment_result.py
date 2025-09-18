@@ -234,10 +234,17 @@ class HSERiskAssessmentResultViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='manager-queue')
     def manager_queue(self, request):
         """
-        Get HSE risk assessments assigned to manager for review
+        Get HSE risk assessments assigned to manager for review with pagination
         """
         manager_id = request.user.id
-        risk_assessments = HSERiskWorkflowService.get_manager_risk_assessments(manager_id)
+        
+        # Get pagination parameters
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+        
+        # Get paginated risk assessments
+        paginated_data = HSERiskWorkflowService.get_manager_risk_assessments(manager_id, page, page_size)
+        risk_assessments = paginated_data['results']
         
         # Serialize the evinces with their risk assessment results
         result_data = []
@@ -285,7 +292,16 @@ class HSERiskAssessmentResultViewSet(viewsets.ModelViewSet):
             
             result_data.append(evince_data)
         
-        return Response(result_data)
+        # Return paginated response
+        return Response({
+            'results': result_data,
+            'total_count': paginated_data['total_count'],
+            'page': paginated_data['page'],
+            'page_size': paginated_data['page_size'],
+            'total_pages': paginated_data['total_pages'],
+            'has_next': paginated_data['has_next'],
+            'has_previous': paginated_data['has_previous']
+        })
 
     @action(detail=True, methods=['post'], url_path='approve')
     def approve_risk_assessment(self, request, pk=None):

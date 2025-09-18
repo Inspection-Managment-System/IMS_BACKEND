@@ -354,7 +354,8 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
         evince.hse_mitigation_department_id = request.data.get('hse_mitigation_department')
         evince.hse_mitigation_assigned_to_id = request.data.get('hse_mitigation_assigned_to')
         evince.hse_mitigation_target_date = request.data.get('hse_mitigation_target_date')
-        evince.status = 'ManagerAssignment'
+        # Keep status as RiskValidated - don't change to ManagerAssignment
+        # evince.status = 'ManagerAssignment'
         evince.save()
         
         return Response({
@@ -425,8 +426,10 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             {'value': 'InspectorReview', 'label': 'Inspector Review', 'color': 'blue'},
             {'value': 'RiskValidated', 'label': 'Risk Validated', 'color': 'green'},
             {'value': 'ManagerAssignment', 'label': 'Manager Assignment', 'color': 'orange'},
-            {'value': 'LIMSInProgress', 'label': 'LIMS In Progress', 'color': 'purple'},
-            {'value': 'LIMSCompleted', 'label': 'LIMS Completed', 'color': 'indigo'},
+            {'value': 'MitigationInProgress', 'label': 'Mitigation In Progress', 'color': 'purple'},
+            {'value': 'MitigationCompleted', 'label': 'Mitigation Completed', 'color': 'blue'},
+            {'value': 'LIMSInProgress', 'label': 'LIMS In Progress', 'color': 'indigo'},
+            {'value': 'LIMSCompleted', 'label': 'LIMS Completed', 'color': 'blue'},
             {'value': 'ManagerApproval', 'label': 'Manager Approval', 'color': 'yellow'},
             {'value': 'Approved', 'label': 'Approved', 'color': 'green'},
             {'value': 'Rejected', 'label': 'Rejected', 'color': 'red'},
@@ -456,3 +459,248 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             {'value': 'Procedure', 'label': 'Procedure'},
         ]
         return Response(categories)
+    
+    @action(detail=True, methods=['post'], url_path='approve-mitigation')
+    def approve_mitigation(self, request, pk=None):
+        """Manager approves completed mitigation work"""
+        try:
+            evince = self.get_object()
+            
+            if evince.status != 'MitigationCompleted':
+                return Response(
+                    {'error': 'Only mitigation completed items can be approved'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update evince status
+            evince.status = 'Approved'
+            evince.hse_approved_by = request.user
+            evince.hse_approved_at = timezone.now()
+            evince.hse_manager_decision_final = True  # Mark as final decision
+            evince.save()
+            print(f"✅ Manager APPROVED evince {evince.id} - status set to 'Approved', manager_decision_final=True")
+            
+            return Response({
+                'message': 'Mitigation work approved successfully',
+                'status': evince.status,
+                'approved_by': request.user.username,
+                'approved_at': evince.hse_approved_at.isoformat()
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to approve mitigation: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'], url_path='reject-mitigation')
+    def reject_mitigation(self, request, pk=None):
+        """Manager rejects completed mitigation work"""
+        try:
+            evince = self.get_object()
+            rejection_reason = request.data.get('rejection_reason', '')
+            
+            if evince.status != 'MitigationCompleted':
+                return Response(
+                    {'error': 'Only mitigation completed items can be rejected'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not rejection_reason:
+                return Response(
+                    {'error': 'Rejection reason is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update evince status
+            evince.status = 'Rejected'
+            evince.hse_risk_rejection_reason = rejection_reason
+            evince.hse_approved_by = request.user
+            evince.hse_approved_at = timezone.now()
+            evince.hse_manager_decision_final = True  # Mark as final decision
+            evince.save()
+            print(f"❌ Manager REJECTED evince {evince.id} - status set to 'Rejected', manager_decision_final=True")
+            
+            return Response({
+                'message': 'Mitigation work rejected successfully',
+                'status': evince.status,
+                'rejection_reason': rejection_reason,
+                'rejected_by': request.user.username,
+                'rejected_at': evince.hse_approved_at.isoformat()
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to reject mitigation: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'], url_path='reassign-mitigation')
+    def reassign_mitigation(self, request, pk=None):
+        """Manager reassigns mitigation to different department"""
+        try:
+            evince = self.get_object()
+            new_department_id = request.data.get('new_department_id')
+            reassignment_reason = request.data.get('reassignment_reason', '')
+            
+            # Debug logging
+            print(f"🔍 Reassignment Debug - Evince ID: {evince.id}")
+            print(f"🔍 Reassignment Debug - Evince Status: {evince.status}")
+            print(f"🔍 Reassignment Debug - Evince Type: {evince.evince_type}")
+            print(f"🔍 Reassignment Debug - Request Data: {request.data}")
+            print(f"🔍 Reassignment Debug - New Department ID: {new_department_id} (type: {type(new_department_id)})")
+            print(f"🔍 Reassignment Debug - Reassignment Reason: {reassignment_reason}")
+            
+            # Check if evince has any existing assignments
+            from inspection_management.models import ExternalDepartmentAssignment
+            existing_assignments = ExternalDepartmentAssignment.objects.filter(evince=evince)
+            print(f"🔍 Existing assignments count: {existing_assignments.count()}")
+            for assignment in existing_assignments:
+                print(f"  - Assignment ID: {assignment.id}, Status: {assignment.status}, Department: {assignment.external_department.name}")
+            
+            # Check available departments
+            from inspection_management.models import ExternalDepartment
+            all_departments = ExternalDepartment.objects.all()
+            print(f"🔍 Available departments count: {all_departments.count()}")
+            for dept in all_departments:
+                print(f"  - Department ID: {dept.id}, Name: {dept.name}, External System ID: {dept.external_system_id}")
+            
+            if evince.status != 'MitigationCompleted':
+                print(f"❌ Status validation failed: {evince.status} != MitigationCompleted")
+                return Response(
+                    {'error': f'Only mitigation completed items can be reassigned. Current status: {evince.status}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not new_department_id:
+                print(f"❌ Department ID validation failed: {new_department_id}")
+                return Response(
+                    {'error': 'New department ID is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get the new department
+            from inspection_management.models import ExternalDepartment
+            try:
+                # Convert to integer if it's a string
+                if isinstance(new_department_id, str):
+                    new_department_id = int(new_department_id)
+                
+                print(f"🔍 Looking for department with ID: {new_department_id}")
+                new_department = ExternalDepartment.objects.get(id=new_department_id)
+                print(f"✅ Found department: {new_department.name}")
+            except ExternalDepartment.DoesNotExist:
+                print(f"❌ Department not found with ID: {new_department_id}")
+                return Response(
+                    {'error': f'New department not found with ID: {new_department_id}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except ValueError as e:
+                print(f"❌ Invalid department ID format: {new_department_id}")
+                return Response(
+                    {'error': f'Invalid department ID format: {new_department_id}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update evince status and department
+            evince.status = 'MitigationInProgress'
+            evince.assigned_department = new_department.name
+            evince.hse_risk_rejection_reason = f"Reassigned to {new_department.name}. Reason: {reassignment_reason}"
+            evince.save()
+            
+            # Update existing assignment record instead of creating new one
+            from inspection_management.models import ExternalDepartmentAssignment
+            
+            # Find the existing assignment for this evince
+            existing_assignment = ExternalDepartmentAssignment.objects.filter(
+                evince=evince
+            ).first()
+            
+            if existing_assignment:
+                # Update existing assignment
+                existing_assignment.external_department = new_department
+                existing_assignment.assigned_by = request.user
+                existing_assignment.target_completion_date = request.data.get('new_target_date')
+                existing_assignment.notes = f"Reassigned from previous department. Reason: {reassignment_reason}"
+                existing_assignment.priority = request.data.get('priority', 'MEDIUM')
+                existing_assignment.assigned_user = request.data.get('assigned_user', '')
+                existing_assignment.status = 'ASSIGNED'
+                existing_assignment.save()
+                
+                print(f"✅ Updated existing assignment {existing_assignment.id} for evince {evince.id}")
+                
+                # Send updated assignment to external system
+                from api.viewsets.external_departments import ExternalDepartmentViewSet
+                external_viewset = ExternalDepartmentViewSet()
+                external_success = external_viewset.send_assignment_to_external_system(existing_assignment, new_department, is_update=True)
+                
+                if external_success:
+                    print(f"✅ Reassignment sent to external system successfully for evince {evince.id}")
+                else:
+                    print(f"❌ Failed to send reassignment to external system for evince {evince.id}")
+                    
+            else:
+                # Fallback: Create new assignment if none exists (shouldn't happen)
+                print(f"⚠️ No existing assignment found for evince {evince.id}, creating new one")
+                
+                # Generate sequential external task ID for new assignment
+                existing_assignments = ExternalDepartmentAssignment.objects.filter(
+                    external_task_id__startswith='Mitigation-EID-'
+                ).values_list('external_task_id', flat=True)
+                
+                max_id = 0
+                for task_id in existing_assignments:
+                    try:
+                        if task_id and task_id.startswith('Mitigation-EID-'):
+                            number_str = task_id.replace('Mitigation-EID-', '')
+                            number = int(number_str)
+                            if number > max_id:
+                                max_id = number
+                    except (ValueError, AttributeError):
+                        continue
+                
+                external_task_id = f'Mitigation-EID-{max_id + 1}'
+                
+                new_assignment = ExternalDepartmentAssignment.objects.create(
+                    evince=evince,
+                    external_department=new_department,
+                    assigned_by=request.user,
+                    target_completion_date=request.data.get('new_target_date'),
+                    notes=f"Reassigned from previous department. Reason: {reassignment_reason}",
+                    priority=request.data.get('priority', 'MEDIUM'),
+                    assigned_user=request.data.get('assigned_user', ''),
+                    external_task_id=external_task_id,
+                    status='ASSIGNED'
+                )
+                
+                # Send new assignment to external system
+                from api.viewsets.external_departments import ExternalDepartmentViewSet
+                external_viewset = ExternalDepartmentViewSet()
+                external_success = external_viewset.send_assignment_to_external_system(new_assignment, new_department)
+                
+                if external_success:
+                    print(f"✅ New assignment sent to external system successfully for evince {evince.id}")
+                else:
+                    print(f"❌ Failed to send new assignment to external system for evince {evince.id}")
+            
+            return Response({
+                'message': f'Mitigation reassigned to {new_department.name} successfully',
+                'status': evince.status,
+                'new_department': new_department.name,
+                'reassignment_reason': reassignment_reason,
+                'reassigned_by': request.user.username,
+                'reassigned_at': timezone.now().isoformat(),
+                'external_task_id': external_task_id,
+                'external_system_sent': external_success,
+                'external_system_message': 'Reassignment sent to external system' if external_success else 'Failed to send to external system'
+            })
+            
+        except Exception as e:
+            print(f"❌ Unexpected error in reassign_mitigation: {str(e)}")
+            print(f"❌ Error type: {type(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response(
+                {'error': f'Failed to reassign mitigation: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

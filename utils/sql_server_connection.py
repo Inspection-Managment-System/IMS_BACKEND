@@ -149,6 +149,66 @@ class SQLServerConnection:
             print(f"Error creating IMS assignment: {str(e)}")
             raise
     
+    def update_ims_assignment(self, assignment_data: Dict[str, Any], ims_evince_id: int) -> bool:
+        """Update existing assignment in LW8Process IMSAssignments table"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # First, get the external department ID from SQL Server using external_system_id
+                external_system_id = assignment_data['external_department_id']
+                cursor.execute(
+                    "SELECT id FROM ExternalDepartments WHERE external_system_id = ?", 
+                    (external_system_id,)
+                )
+                result = cursor.fetchone()
+                
+                if not result:
+                    raise ValueError(f"External department with external_system_id '{external_system_id}' not found in SQL Server")
+                
+                external_dept_id = result[0]
+                
+                # Update the existing assignment
+                query = """
+                UPDATE IMSAssignments SET
+                    external_department_id = ?,
+                    assigned_by_ims_user_id = ?,
+                    target_completion_date = ?,
+                    priority = ?,
+                    assignment_data = ?,
+                    risk_level = ?,
+                    risk_category = ?,
+                    status = ?,
+                    updated_at = GETDATE()
+                WHERE ims_evince_id = ?
+                """
+                
+                cursor.execute(query, (
+                    external_dept_id,  # Use the integer ID from SQL Server
+                    assignment_data['assigned_by_ims_user_id'],
+                    assignment_data['target_completion_date'],
+                    assignment_data['priority'],
+                    json.dumps(assignment_data['assignment_data']),
+                    assignment_data['risk_level'],
+                    assignment_data['risk_category'],
+                    'ASSIGNED',
+                    ims_evince_id
+                ))
+                
+                rows_affected = cursor.rowcount
+                conn.commit()
+                
+                if rows_affected > 0:
+                    print(f"✅ Updated IMS assignment for evince {ims_evince_id}")
+                    return True
+                else:
+                    print(f"⚠️ No assignment found to update for evince {ims_evince_id}")
+                    return False
+                
+        except Exception as e:
+            print(f"Error updating IMS assignment: {str(e)}")
+            raise
+    
     def fetch_assignment_updates(self) -> List[Dict[str, Any]]:
         """Fetch assignment updates from LW8Process database"""
         try:

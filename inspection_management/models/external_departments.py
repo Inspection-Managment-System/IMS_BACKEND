@@ -108,6 +108,10 @@ class ExternalDepartmentAssignment(models.Model):
     notes = models.TextField(blank=True, null=True)
     external_response = models.JSONField(default=dict, blank=True, help_text="Response from external system")
     
+    # Assignment details
+    priority = models.CharField(max_length=20, default='MEDIUM', help_text="Assignment priority")
+    assigned_user = models.CharField(max_length=200, blank=True, null=True, help_text="Assigned user in external department")
+    
     # Mitigation completion details (for HSE Risk Assessment workflow)
     completion_notes = models.TextField(blank=True, null=True, help_text="Notes from external department upon completion")
     mitigation_actions = models.TextField(blank=True, null=True, help_text="Detailed mitigation actions performed by external department")

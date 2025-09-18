@@ -6,6 +6,7 @@ import requests
 import json
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Max
 
 from inspection_management.models import Evince, ExternalDepartment, ExternalDepartmentAssignment
 from api.serializers.external_departments import (
@@ -96,6 +97,12 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
         """Assign multiple evinces to this external department"""
         external_dept = self.get_object()
         
+        print(f"🔍 Assignment request received:")
+        print(f"  - Department ID: {pk}")
+        print(f"  - Department: {external_dept.name}")
+        print(f"  - User: {request.user.username}")
+        print(f"  - Request data: {request.data}")
+        
         # Check if user has manager permissions
         if not hasattr(request.user, 'userprofile') or request.user.userprofile.role.name.upper() not in ['ADMIN', 'MANAGER']:
             return Response(
@@ -110,6 +117,15 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Convert evince_ids to integers if they're strings
+        try:
+            evince_ids = [int(eid) for eid in evince_ids]
+        except (ValueError, TypeError) as e:
+            return Response(
+                {'error': f'Invalid evince_ids format: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         # Get evinces
         evinces = Evince.objects.filter(
             id__in=evince_ids,
@@ -118,8 +134,24 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
         )
         
         if not evinces.exists():
+            # Check what evinces actually exist for debugging
+            all_evinces = Evince.objects.filter(id__in=evince_ids)
+            evince_details = []
+            for e in all_evinces:
+                evince_details.append({
+                    'id': e.id,
+                    'name': e.name,
+                    'evince_type': e.evince_type,
+                    'status': e.status
+                })
+            
             return Response(
-                {'error': 'No valid evinces found for assignment'},
+                {
+                    'error': 'No valid evinces found for assignment. Evinces must have status "RiskValidated" and type "hse_risk_management"',
+                    'evince_details': evince_details,
+                    'required_status': 'RiskValidated',
+                    'required_type': 'hse_risk_management'
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -128,11 +160,18 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
         target_completion_date = None
         if target_completion_date_str:
             try:
+                print(f"Parsing date: {target_completion_date_str}")
                 # Parse ISO 8601 string to datetime
                 target_completion_date = timezone.datetime.fromisoformat(target_completion_date_str.replace('Z', '+00:00'))
-            except ValueError:
+                print(f"Parsed date: {target_completion_date}")
+            except ValueError as e:
+                print(f"Date parsing error: {e}")
                 return Response(
-                    {'error': 'Invalid target_completion_date format. Use ISO 8601 (e.g., 2025-09-20T10:00:00Z)'},
+                    {
+                        'error': 'Invalid target_completion_date format. Use ISO 8601 (e.g., 2025-09-20T10:00:00Z)',
+                        'received_date': target_completion_date_str,
+                        'parsing_error': str(e)
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
@@ -140,26 +179,58 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
         assignments = []
         for evince in evinces:
             # Check if assignment already exists
+            # Auto-generate external_task_id if not provided
+            external_task_id = request.data.get('external_task_id', '')
+            if not external_task_id:
+                # Generate sequential mitigation ID
+                existing_assignments = ExternalDepartmentAssignment.objects.filter(
+                    external_task_id__startswith='Mitigation-EID-'
+                ).values_list('external_task_id', flat=True)
+                
+                max_id = 0
+                for task_id in existing_assignments:
+                    try:
+                        if task_id and task_id.startswith('Mitigation-EID-'):
+                            number_str = task_id.replace('Mitigation-EID-', '')
+                            number = int(number_str)
+                            if number > max_id:
+                                max_id = number
+                    except (ValueError, AttributeError):
+                        continue
+                
+                external_task_id = f'Mitigation-EID-{max_id + 1}'
+                print(f"🔢 Auto-generated external_task_id: {external_task_id}")
+
             assignment, created = ExternalDepartmentAssignment.objects.get_or_create(
                 evince=evince,
                 external_department=external_dept,
                 defaults={
                     'assigned_by': request.user,
                     'target_completion_date': target_completion_date,
-                    'notes': request.data.get('notes', '')
+                    'notes': request.data.get('notes', ''),
+                    'external_task_id': external_task_id,
+                    'priority': request.data.get('priority', 'MEDIUM'),
+                    'assigned_user': request.data.get('assigned_user', '')
                 }
             )
             
             # Only send to external system if it's a new assignment
             if created:
                 # Send assignment to external system (LW8Process)
-                self.send_assignment_to_external_system(assignment, external_dept)
+                external_success = self.send_assignment_to_external_system(assignment, external_dept)
                 
-                # Update evince status
-                evince.status = 'ManagerAssignment'
-                evince.save()
-                
-                print(f"Created new assignment for evince {evince.id}")
+                if external_success:
+                    # Update status to MitigationInProgress after successful external system upload
+                    evince.status = 'MitigationInProgress'
+                    evince.assigned_department = external_dept.name
+                    evince.save()
+                    print(f"Created new assignment for evince {evince.id}, status updated to MitigationInProgress, assigned to {external_dept.name}")
+                else:
+                    # Keep as RiskValidated if external system upload failed
+                    evince.status = 'RiskValidated'
+                    evince.assigned_department = external_dept.name
+                    evince.save()
+                    print(f"Created new assignment for evince {evince.id}, external upload failed, status remains RiskValidated, assigned to {external_dept.name}")
             else:
                 print(f"Assignment already exists for evince {evince.id}, skipping external system submission")
             
@@ -754,7 +825,7 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
             'risk_assessments': risk_assessments
         })
     
-    def send_assignment_to_external_system(self, assignment, external_dept):
+    def send_assignment_to_external_system(self, assignment, external_dept, is_update=False):
         """Send assignment data to external system (LW8Process)"""
         try:
             # Get complete evince details including parameter results
@@ -842,18 +913,31 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
             
             # Send to SQL Server
             sql_conn = SQLServerConnection()
-            external_assignment_id = sql_conn.create_ims_assignment(assignment_data)
             
-            # Update assignment with external task ID
-            assignment.external_task_id = f"TASK_{external_assignment_id}_{external_dept.external_system_id}"
-            assignment.external_status = 'ASSIGNED'
-            assignment.save()
-            
-            print(f"Successfully sent assignment to {external_dept.name} (External ID: {external_assignment_id})")
+            if is_update:
+                # Update existing assignment
+                success = sql_conn.update_ims_assignment(assignment_data, evince.id)
+                if success:
+                    print(f"Successfully updated assignment for {external_dept.name} (Evince ID: {evince.id})")
+                    return True
+                else:
+                    print(f"Failed to update assignment for {external_dept.name} (Evince ID: {evince.id})")
+                    return False
+            else:
+                # Create new assignment
+                external_assignment_id = sql_conn.create_ims_assignment(assignment_data)
+                
+                # Update assignment with external task ID
+                assignment.external_task_id = f"TASK_{external_assignment_id}_{external_dept.external_system_id}"
+                assignment.external_status = 'ASSIGNED'
+                assignment.save()
+                
+                print(f"Successfully sent assignment to {external_dept.name} (External ID: {external_assignment_id})")
+                return True
             
         except Exception as e:
             print(f"Error sending assignment to external system: {str(e)}")
-            raise
+            return False
     
     @action(detail=False, methods=['get'], url_path='fetch-updates-from-lw8')
     def fetch_updates_from_lw8(self, request):
@@ -888,6 +972,10 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
                         print(f"Assignment not found for update: {update_data}")
                         continue
                     
+                    # Debug: Check manager decision status
+                    evince = assignment.evince
+                    print(f"🔍 Sync Debug - Evince {evince.id}: current_status={evince.status}, manager_decision_final={evince.hse_manager_decision_final}")
+                    
                     # Update assignment
                     assignment.external_status = update_data['status']
                     assignment.last_sync_at = timezone.now()
@@ -899,17 +987,31 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
                         assignment.evidence_data = update_data.get('evidence_data', '')
                         assignment.cost_incurred = update_data.get('cost_incurred', 0)
                         
-                        # Update evince
+                        # Update evince - set to MitigationCompleted for manager review
                         evince = assignment.evince
                         evince.hse_mitigation_actions = update_data.get('mitigation_actions', '')
                         evince.hse_mitigation_evidence = update_data.get('evidence_data', '')
                         evince.hse_mitigation_completed = True
-                        evince.status = 'LIMSCompleted'
+                        
+                        # Only update status if manager hasn't made final decision
+                        if not evince.hse_manager_decision_final:
+                            evince.status = 'MitigationCompleted'
+                            print(f"✅ Updated evince {evince.id} status to MitigationCompleted (manager decision pending)")
+                        else:
+                            print(f"⚠️ Skipped status update for evince {evince.id} - manager has made final decision: {evince.status}")
+                        
                         evince.save()
                     elif update_data['status'] == 'IN_PROGRESS':
                         assignment.status = 'IN_PROGRESS'
                         evince = assignment.evince
-                        evince.status = 'LIMSInProgress'
+                        
+                        # Only update status if manager hasn't made final decision
+                        if not evince.hse_manager_decision_final:
+                            evince.status = 'LIMSInProgress'
+                            print(f"✅ Updated evince {evince.id} status to LIMSInProgress (manager decision pending)")
+                        else:
+                            print(f"⚠️ Skipped status update for evince {evince.id} - manager has made final decision: {evince.status}")
+                        
                         evince.save()
                     
                     assignment.save()
@@ -930,5 +1032,96 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {'error': f'Failed to fetch updates from LW8Process: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='get-next-mitigation-id')
+    def get_next_mitigation_id(self, request):
+        """Get next sequential mitigation ID for HSE Risk Assessment assignments"""
+        try:
+            # Get all existing mitigation IDs and find the highest number
+            assignments = ExternalDepartmentAssignment.objects.filter(
+                external_task_id__startswith='Mitigation-EID-'
+            ).values_list('external_task_id', flat=True)
+            
+            max_id = 0
+            for task_id in assignments:
+                try:
+                    # Extract number from "Mitigation-EID-123" format
+                    if task_id and task_id.startswith('Mitigation-EID-'):
+                        number_str = task_id.replace('Mitigation-EID-', '')
+                        number = int(number_str)
+                        if number > max_id:
+                            max_id = number
+                except (ValueError, AttributeError):
+                    continue
+            
+            # If no existing IDs, start from 1, otherwise increment
+            next_id = max_id + 1
+            
+            return Response({
+                'next_id': next_id,
+                'message': f'Next mitigation ID: {next_id}',
+                'existing_count': len(assignments)
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to generate next mitigation ID: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='assignments')
+    def get_assignments(self, request):
+        """Get existing assignments for a specific evince"""
+        try:
+            evince_id = request.query_params.get('evince_id')
+            if not evince_id:
+                return Response(
+                    {'error': 'evince_id parameter is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get assignments for the evince
+            assignments = ExternalDepartmentAssignment.objects.filter(
+                evince_id=evince_id
+            ).select_related('external_department', 'assigned_by')
+            
+            # Serialize the data
+            assignment_data = []
+            for assignment in assignments:
+                assignment_data.append({
+                    'id': assignment.id,
+                    'external_department': {
+                        'id': assignment.external_department.id,
+                        'name': assignment.external_department.name,
+                        'department_type': assignment.external_department.department_type,
+                        'contact_email': assignment.external_department.contact_email,
+                        'contact_person': assignment.external_department.contact_person
+                    },
+                    'target_completion_date': assignment.target_completion_date.isoformat() if assignment.target_completion_date else None,
+                    'notes': assignment.notes,
+                    'priority': assignment.priority,
+                    'external_task_id': assignment.external_task_id,
+                    'assigned_user': assignment.assigned_user if assignment.assigned_user and assignment.assigned_user != 'None' else None,
+                    'status': assignment.status,
+                    'assigned_at': assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+                    'assigned_by': {
+                        'id': assignment.assigned_by.id,
+                        'username': assignment.assigned_by.username,
+                        'email': assignment.assigned_by.email
+                    },
+                    # Add mitigation details
+                    'completion_notes': assignment.completion_notes,
+                    'mitigation_actions': assignment.mitigation_actions,
+                    'evidence_data': assignment.evidence_data,
+                    'cost_incurred': assignment.cost_incurred
+                })
+            
+            return Response(assignment_data)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to fetch assignments: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.db import models
 from django.db.models import Q
 from inspection_management.models import Evince, HSERiskAssessmentResult, ExternalDepartment, ExternalDepartmentAssignment
 from users.models.user import User
@@ -8,8 +9,8 @@ class HSERiskWorkflowService:
     """Service for managing HSE risk assessment workflow"""
     
     @staticmethod
-    def get_manager_risk_assessments(manager_id):
-        """Get all HSE risk assessments assigned to a manager for review"""
+    def get_manager_risk_assessments(manager_id, page=1, page_size=10):
+        """Get HSE risk assessments assigned to a manager for review with pagination"""
         try:
             manager = User.objects.get(id=manager_id)
             
@@ -23,15 +24,60 @@ class HSERiskWorkflowService:
             business_unit_ids = business_units.values_list('id', flat=True)
             
             # Get risk assessments assigned to manager
-            risk_assessments = Evince.objects.filter(
+            queryset = Evince.objects.filter(
                 evince_type='hse_risk_management',
-                status__in=['RiskValidated', 'ManagerAssignment', 'LIMSInProgress', 'LIMSCompleted', 'Completed', 'Rejected', 'Reassigned'],
+                status__in=['RiskValidated', 'ManagerAssignment', 'MitigationInProgress', 'MitigationCompleted', 'LIMSInProgress', 'LIMSCompleted', 'Completed', 'Approved', 'Rejected', 'Reassigned'],
                 business_unit_id__in=business_unit_ids
-            ).order_by('-changed_on')
+            ).order_by(
+                # Sort by status priority (most urgent first)
+                models.Case(
+                    models.When(status='RiskValidated', then=models.Value(1)),
+                    models.When(status='ManagerAssignment', then=models.Value(2)),
+                    models.When(status='MitigationInProgress', then=models.Value(3)),
+                    models.When(status='MitigationCompleted', then=models.Value(4)),
+                    models.When(status='LIMSInProgress', then=models.Value(5)),
+                    models.When(status='LIMSCompleted', then=models.Value(6)),
+                    models.When(status='Completed', then=models.Value(7)),
+                    models.When(status='Approved', then=models.Value(8)),
+                    models.When(status='Rejected', then=models.Value(9)),
+                    models.When(status='Reassigned', then=models.Value(10)),
+                    default=models.Value(11),
+                    output_field=models.IntegerField(),
+                ),
+                # Then by due date (earliest first)
+                'end_date_time',
+                # Finally by ID (newest first as tiebreaker)
+                '-id'
+            )
             
-            return risk_assessments
+            # Calculate pagination
+            total_count = queryset.count()
+            total_pages = (total_count + page_size - 1) // page_size
+            
+            # Apply pagination
+            start_index = (page - 1) * page_size
+            end_index = start_index + page_size
+            risk_assessments = queryset[start_index:end_index]
+            
+            return {
+                'results': risk_assessments,
+                'total_count': total_count,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+                'has_next': page < total_pages,
+                'has_previous': page > 1
+            }
         except User.DoesNotExist:
-            return Evince.objects.none()
+            return {
+                'results': Evince.objects.none(),
+                'total_count': 0,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': 0,
+                'has_next': False,
+                'has_previous': False
+            }
     
     @staticmethod
     def assign_risk_to_manager(evince_id, manager_id):
