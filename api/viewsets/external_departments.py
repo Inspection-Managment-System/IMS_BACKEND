@@ -92,6 +92,32 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
+    @action(detail=True, methods=['get'], url_path='users')
+    def get_department_users(self, request, pk=None):
+        """Get users associated with a specific external department"""
+        try:
+            department = self.get_object()
+            
+            # Return department contact information as "users"
+            users = []
+            if department.contact_person:
+                users.append({
+                    'id': department.id,
+                    'name': department.contact_person,
+                    'email': department.contact_email or '',
+                    'role': 'Contact Person'
+                })
+            
+            # If department has external_system_id, we could potentially fetch more users
+            # from the external system, but for now we'll return the contact person
+            
+            return Response(users)
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to fetch department users: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     @action(detail=True, methods=['post'], url_path='assign-evinces')
     def assign_evinces(self, request, pk=None):
         """Assign multiple evinces to this external department"""

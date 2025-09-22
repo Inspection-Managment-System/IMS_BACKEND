@@ -12,7 +12,9 @@ DEBUG = config("DEBUG", cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 
 
+# Get installed apps from environment and add hazard_identification
 INSTALLED_APPS = config("INSTALLED_APPS", cast=Csv())
+INSTALLED_APPS.append("hazard_identification")
 
 MIDDLEWARE = config("MIDDLEWARE", cast=Csv())
 
@@ -106,3 +108,7 @@ EMAIL_HOST_PORT = config("EMAIL_HOST_PORT")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

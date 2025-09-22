@@ -616,11 +616,39 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                 evince=evince
             ).first()
             
+            # Initialize external_success variable
+            external_success = False
+            
             if existing_assignment:
                 # Update existing assignment
                 existing_assignment.external_department = new_department
                 existing_assignment.assigned_by = request.user
-                existing_assignment.target_completion_date = request.data.get('new_target_date')
+                
+                # Handle target date properly - convert ISO string to datetime if provided
+                target_date = request.data.get('new_target_date')
+                if target_date:
+                    try:
+                        from django.utils.dateparse import parse_datetime
+                        from django.utils import timezone
+                        
+                        parsed_date = parse_datetime(target_date)
+                        if parsed_date:
+                            # Convert to local timezone if it's UTC
+                            if parsed_date.tzinfo is None:
+                                # If no timezone info, assume it's UTC
+                                parsed_date = timezone.make_aware(parsed_date, timezone.utc)
+                            
+                            # Convert to local timezone for storage
+                            local_date = timezone.localtime(parsed_date)
+                            existing_assignment.target_completion_date = local_date
+                            print(f"✅ Updated target_completion_date: {local_date} (original: {target_date})")
+                        else:
+                            print(f"⚠️ Could not parse target date: {target_date}")
+                    except Exception as e:
+                        print(f"❌ Error parsing target date {target_date}: {str(e)}")
+                else:
+                    print(f"⚠️ No target date provided in reassignment")
+                
                 existing_assignment.notes = f"Reassigned from previous department. Reason: {reassignment_reason}"
                 existing_assignment.priority = request.data.get('priority', 'MEDIUM')
                 existing_assignment.assigned_user = request.data.get('assigned_user', '')
@@ -661,11 +689,32 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                 
                 external_task_id = f'Mitigation-EID-{max_id + 1}'
                 
+                # Handle target date properly for new assignment
+                target_date = request.data.get('new_target_date')
+                parsed_target_date = None
+                if target_date:
+                    try:
+                        from django.utils.dateparse import parse_datetime
+                        from django.utils import timezone
+                        
+                        parsed_date = parse_datetime(target_date)
+                        if parsed_date:
+                            # Convert to local timezone if it's UTC
+                            if parsed_date.tzinfo is None:
+                                # If no timezone info, assume it's UTC
+                                parsed_date = timezone.make_aware(parsed_date, timezone.utc)
+                            
+                            # Convert to local timezone for storage
+                            parsed_target_date = timezone.localtime(parsed_date)
+                            print(f"✅ Parsed target_completion_date for new assignment: {parsed_target_date} (original: {target_date})")
+                    except Exception as e:
+                        print(f"❌ Error parsing target date for new assignment {target_date}: {str(e)}")
+
                 new_assignment = ExternalDepartmentAssignment.objects.create(
                     evince=evince,
                     external_department=new_department,
                     assigned_by=request.user,
-                    target_completion_date=request.data.get('new_target_date'),
+                    target_completion_date=parsed_target_date,
                     notes=f"Reassigned from previous department. Reason: {reassignment_reason}",
                     priority=request.data.get('priority', 'MEDIUM'),
                     assigned_user=request.data.get('assigned_user', ''),
@@ -683,17 +732,25 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                 else:
                     print(f"❌ Failed to send new assignment to external system for evince {evince.id}")
             
-            return Response({
+            # Prepare response data
+            response_data = {
                 'message': f'Mitigation reassigned to {new_department.name} successfully',
                 'status': evince.status,
                 'new_department': new_department.name,
                 'reassignment_reason': reassignment_reason,
                 'reassigned_by': request.user.username,
                 'reassigned_at': timezone.now().isoformat(),
-                'external_task_id': external_task_id,
                 'external_system_sent': external_success,
                 'external_system_message': 'Reassignment sent to external system' if external_success else 'Failed to send to external system'
-            })
+            }
+            
+            # Add external_task_id only if it exists
+            if existing_assignment:
+                response_data['external_task_id'] = existing_assignment.external_task_id
+            elif 'external_task_id' in locals():
+                response_data['external_task_id'] = external_task_id
+            
+            return Response(response_data)
             
         except Exception as e:
             print(f"❌ Unexpected error in reassign_mitigation: {str(e)}")

@@ -29,24 +29,7 @@ class HSERiskWorkflowService:
                 status__in=['RiskValidated', 'ManagerAssignment', 'MitigationInProgress', 'MitigationCompleted', 'LIMSInProgress', 'LIMSCompleted', 'Completed', 'Approved', 'Rejected', 'Reassigned'],
                 business_unit_id__in=business_unit_ids
             ).order_by(
-                # Sort by status priority (most urgent first)
-                models.Case(
-                    models.When(status='RiskValidated', then=models.Value(1)),
-                    models.When(status='ManagerAssignment', then=models.Value(2)),
-                    models.When(status='MitigationInProgress', then=models.Value(3)),
-                    models.When(status='MitigationCompleted', then=models.Value(4)),
-                    models.When(status='LIMSInProgress', then=models.Value(5)),
-                    models.When(status='LIMSCompleted', then=models.Value(6)),
-                    models.When(status='Completed', then=models.Value(7)),
-                    models.When(status='Approved', then=models.Value(8)),
-                    models.When(status='Rejected', then=models.Value(9)),
-                    models.When(status='Reassigned', then=models.Value(10)),
-                    default=models.Value(11),
-                    output_field=models.IntegerField(),
-                ),
-                # Then by due date (earliest first)
-                'end_date_time',
-                # Finally by ID (newest first as tiebreaker)
+                # Sort by creation order (newest first) to keep positions stable
                 '-id'
             )
             
