@@ -16,6 +16,10 @@ class HazardEvidence(models.Model):
     EVIDENCE_TYPE_CHOICES = [
         ('before', 'Before'),
         ('after', 'After'),
+        ('initial', 'Initial'),
+        ('admin', 'Admin'),
+        ('assessment', 'Assessment'),
+        ('inspector', 'Inspector'),
     ]
     
     hazard = models.ForeignKey(

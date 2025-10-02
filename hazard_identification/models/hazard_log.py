@@ -9,10 +9,14 @@ class HazardIdentification(models.Model):
     
     STATUS_CHOICES = [
         ('Logged', 'Logged'),
-        ('InspectorReview', 'Inspector Review'),
-        ('ManagerAssignment', 'Manager Assignment'),
+        ('AssignedToInspector', 'Assigned to Inspector'),
+        ('InspectorAssessment', 'Inspector Assessment'),
+        ('ManagerReview', 'Manager Review'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+        ('Reassigned', 'Reassigned'),
         ('InProgress', 'In Progress'),
-        ('Done', 'Done'),
+        ('Completed', 'Completed'),
     ]
     
     SEVERITY_CHOICES = [
@@ -133,6 +137,30 @@ class HazardIdentification(models.Model):
         help_text="Manager who reviewed and assigned the hazard"
     )
     
+    # Manager Review Fields
+    manager_review_notes = models.TextField(
+        blank=True,
+        help_text="Manager's review notes and comments"
+    )
+    manager_decision = models.CharField(
+        max_length=20,
+        choices=[
+            ('Approved', 'Approved'),
+            ('Rejected', 'Rejected'),
+            ('Reassigned', 'Reassigned'),
+        ],
+        blank=True,
+        help_text="Manager's decision on the hazard"
+    )
+    rejection_reason = models.TextField(
+        blank=True,
+        help_text="Reason for rejection if applicable"
+    )
+    reassignment_notes = models.TextField(
+        blank=True,
+        help_text="Notes for reassignment if applicable"
+    )
+    
     # Dates and Tracking
     reported_date = models.DateTimeField(
         auto_now_add=True,
@@ -204,10 +232,14 @@ class HazardIdentification(models.Model):
     def status_color(self):
         """Get color code for status display"""
         color_map = {
-            'Logged': '#dc2626',      # Red
-            'InspectorReview': '#ea580c',  # Orange
-            'ManagerAssignment': '#d97706',  # Yellow
-            'InProgress': '#2563eb',   # Blue
-            'Done': '#16a34a',        # Green
+            'Logged': '#dc2626',              # Red
+            'AssignedToInspector': '#ea580c', # Orange
+            'InspectorAssessment': '#d97706', # Yellow
+            'ManagerReview': '#2563eb',       # Blue
+            'Approved': '#16a34a',            # Green
+            'Rejected': '#dc2626',            # Red
+            'Reassigned': '#7c3aed',          # Purple
+            'InProgress': '#0891b2',          # Cyan
+            'Completed': '#16a34a',           # Green
         }
         return color_map.get(self.status, '#6b7280')

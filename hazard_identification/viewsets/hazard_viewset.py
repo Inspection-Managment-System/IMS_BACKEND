@@ -58,12 +58,13 @@ class HazardIdentificationViewSet(viewsets.ModelViewSet):
             # Admin can see all hazards
             pass
         elif user_role and user_role.upper() in ['MANAGER']:
-            # Manager can see hazards in their business units
-            manager_data_groups = user.userprofile.data_groups.all()
-            data_group_ids = manager_data_groups.values_list('id', flat=True)
-            business_units = BusinessUnit.objects.filter(group_id__in=data_group_ids)
-            business_unit_ids = business_units.values_list('id', flat=True)
-            queryset = queryset.filter(business_unit_id__in=business_unit_ids)
+            # Manager can see:
+            # 1. Hazards assigned to them specifically
+            # 2. Hazards that have been assessed by inspectors (where inspectors have entered results)
+            queryset = queryset.filter(
+                Q(assigned_to=user) |  # Hazards assigned to this manager
+                Q(status__in=['ManagerReview', 'Approved', 'Rejected', 'Reassigned'])  # Hazards assessed by inspectors
+            )
         elif user_role and user_role.upper() in ['INSPECTOR']:
             # Inspector can see hazards they reported or are assigned to
             queryset = queryset.filter(
@@ -130,9 +131,9 @@ class HazardIdentificationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            if evidence_type not in ['before', 'after']:
+            if evidence_type not in ['before', 'after', 'initial', 'admin', 'assessment', 'inspector']:
                 return Response(
-                    {'error': 'Evidence type must be "before" or "after"'}, 
+                    {'error': 'Evidence type must be one of: before, after, initial, admin, assessment, inspector'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -237,21 +238,64 @@ class HazardIdentificationViewSet(viewsets.ModelViewSet):
                 )
             
             # Get assessment data
-            assessment_notes = request.data.get('assessment_notes', '')
             risk_level = request.data.get('risk_level', '')
-            recommended_actions = request.data.get('recommended_actions', '')
+            risk_factors = request.data.get('risk_factors', '')
+            exposure_assessment = request.data.get('exposure_assessment', '')
+            root_cause_analysis = request.data.get('root_cause_analysis', '')
+            immediate_risks = request.data.get('immediate_risks', '')
+            potential_consequences = request.data.get('potential_consequences', '')
+            immediate_actions = request.data.get('immediate_actions', '')
+            long_term_solutions = request.data.get('long_term_solutions', '')
+            preventive_measures = request.data.get('preventive_measures', '')
+            overall_assessment = request.data.get('overall_assessment', '')
+            confidence_level = request.data.get('confidence_level', '')
+            next_steps = request.data.get('next_steps', '')
             new_status = request.data.get('status', 'InspectorReview')
             
-            # Update hazard with assessment
-            if assessment_notes:
-                hazard.additional_notes = f"{hazard.additional_notes}\n\nInspector Assessment: {assessment_notes}".strip()
+            # Build comprehensive assessment notes
+            assessment_notes = []
+            if risk_factors:
+                assessment_notes.append(f"Risk Factors: {risk_factors}")
+            if exposure_assessment:
+                assessment_notes.append(f"Exposure Assessment: {exposure_assessment}")
+            if root_cause_analysis:
+                assessment_notes.append(f"Root Cause Analysis: {root_cause_analysis}")
+            if immediate_risks:
+                assessment_notes.append(f"Immediate Risks: {immediate_risks}")
+            if potential_consequences:
+                assessment_notes.append(f"Potential Consequences: {potential_consequences}")
+            if overall_assessment:
+                assessment_notes.append(f"Overall Assessment: {overall_assessment}")
+            if confidence_level:
+                assessment_notes.append(f"Confidence Level: {confidence_level}")
+            if next_steps:
+                assessment_notes.append(f"Next Steps: {next_steps}")
             
-            if recommended_actions:
-                hazard.recommended_controls = f"{hazard.recommended_controls}\n\nInspector Recommendations: {recommended_actions}".strip()
+            # Update hazard with comprehensive assessment
+            if assessment_notes:
+                comprehensive_assessment = "\n\n".join(assessment_notes)
+                hazard.additional_notes = f"{hazard.additional_notes}\n\n=== INSPECTOR ASSESSMENT ===\n{comprehensive_assessment}".strip()
+            
+            # Update recommended controls with detailed actions
+            recommended_controls = []
+            if immediate_actions:
+                recommended_controls.append(f"IMMEDIATE ACTIONS: {immediate_actions}")
+            if long_term_solutions:
+                recommended_controls.append(f"LONG-TERM SOLUTIONS: {long_term_solutions}")
+            if preventive_measures:
+                recommended_controls.append(f"PREVENTIVE MEASURES: {preventive_measures}")
+            
+            if recommended_controls:
+                comprehensive_controls = "\n\n".join(recommended_controls)
+                hazard.recommended_controls = f"{hazard.recommended_controls}\n\n=== INSPECTOR RECOMMENDATIONS ===\n{comprehensive_controls}".strip()
+            
+            # Update risk level if provided
+            if risk_level:
+                hazard.severity_level = risk_level
             
             # Update status
             old_status = hazard.status
-            hazard.status = new_status
+            hazard.status = 'ManagerReview'  # Always go to manager review after inspector assessment
             hazard.reviewed_by = user
             hazard.save()
             
@@ -266,6 +310,65 @@ class HazardIdentificationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
+    @action(detail=True, methods=['post'])
+    def manager_review(self, request, pk=None):
+        """Manager review of hazard assessment - approve, reject, or reassign"""
+        try:
+            hazard = self.get_object()
+            
+            # Check if user is a manager
+            user = request.user
+            user_role = None
+            if hasattr(user, 'userprofile') and user.userprofile and user.userprofile.role:
+                user_role = user.userprofile.role.name
+            
+            if not (user_role and user_role.upper() in ['MANAGER']):
+                return Response(
+                    {'error': 'You are not authorized to review hazards'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get review data
+            decision = request.data.get('decision', '')
+            review_notes = request.data.get('review_notes', '')
+            rejection_reason = request.data.get('rejection_reason', '')
+            reassignment_notes = request.data.get('reassignment_notes', '')
+            
+            if not decision:
+                return Response(
+                    {'error': 'Decision is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update hazard with manager review
+            old_status = hazard.status
+            hazard.manager_decision = decision
+            hazard.manager_review_notes = review_notes
+            hazard.reviewed_by = user
+            
+            if decision == 'Approved':
+                hazard.status = 'Approved'
+            elif decision == 'Rejected':
+                hazard.status = 'Rejected'
+                hazard.rejection_reason = rejection_reason
+            elif decision == 'Reassigned':
+                hazard.status = 'Reassigned'
+                hazard.reassignment_notes = reassignment_notes
+                # You might want to reassign to a different inspector here
+            
+            hazard.save()
+            
+            return Response({
+                'message': f'Hazard {decision.lower()} successfully. Status updated from {old_status} to {hazard.status}',
+                'hazard': HazardIdentificationSerializer(hazard).data
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Review failed: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     @action(detail=False, methods=['get'])
     def dashboard_stats(self, request):
         """Get dashboard statistics for hazards"""
@@ -274,13 +377,17 @@ class HazardIdentificationViewSet(viewsets.ModelViewSet):
         stats = {
             'total_hazards': queryset.count(),
             'logged_hazards': queryset.filter(status='Logged').count(),
-            'in_review_hazards': queryset.filter(status='InspectorReview').count(),
-            'assigned_hazards': queryset.filter(status='ManagerAssignment').count(),
+            'assigned_to_inspector': queryset.filter(status='AssignedToInspector').count(),
+            'inspector_assessment': queryset.filter(status='InspectorAssessment').count(),
+            'manager_review': queryset.filter(status='ManagerReview').count(),
+            'approved_hazards': queryset.filter(status='Approved').count(),
+            'rejected_hazards': queryset.filter(status='Rejected').count(),
+            'reassigned_hazards': queryset.filter(status='Reassigned').count(),
             'in_progress_hazards': queryset.filter(status='InProgress').count(),
-            'completed_hazards': queryset.filter(status='Done').count(),
+            'completed_hazards': queryset.filter(status='Completed').count(),
             'overdue_hazards': queryset.filter(
                 target_completion_date__lt=timezone.now(),
-                status__in=['Logged', 'InspectorReview', 'ManagerAssignment', 'InProgress']
+                status__in=['Logged', 'AssignedToInspector', 'InspectorAssessment', 'ManagerReview', 'InProgress']
             ).count(),
         }
         

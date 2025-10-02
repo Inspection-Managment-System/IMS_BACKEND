@@ -66,6 +66,11 @@ class HazardIdentificationCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Set the reported_by to the current user
         validated_data['reported_by'] = self.context['request'].user
+        
+        # Automatically set status to AssignedToInspector if an inspector is assigned
+        if validated_data.get('assigned_to'):
+            validated_data['status'] = 'AssignedToInspector'
+        
         return super().create(validated_data)
 
 
