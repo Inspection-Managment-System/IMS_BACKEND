@@ -299,6 +299,16 @@ class HazardIdentificationViewSet(viewsets.ModelViewSet):
             hazard.reviewed_by = user
             hazard.save()
             
+            # Send lightweight email notification to manager (non-blocking)
+            try:
+                from hazard_identification.services.email_notifications import HazardEmailNotificationService
+                HazardEmailNotificationService.send_assessment_completion_notification(hazard, user)
+            except Exception as e:
+                # Log error but don't fail the main request
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send assessment notification: {str(e)}")
+            
             return Response({
                 'message': f'Hazard assessed successfully. Status updated from {old_status} to {hazard.status}',
                 'hazard': HazardIdentificationSerializer(hazard).data
@@ -357,6 +367,16 @@ class HazardIdentificationViewSet(viewsets.ModelViewSet):
                 # You might want to reassign to a different inspector here
             
             hazard.save()
+            
+            # Send lightweight email notification for status update (non-blocking)
+            try:
+                from hazard_identification.services.email_notifications import HazardEmailNotificationService
+                HazardEmailNotificationService.send_status_update_notification(hazard, old_status, hazard.status, user)
+            except Exception as e:
+                # Log error but don't fail the main request
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send status notification: {str(e)}")
             
             return Response({
                 'message': f'Hazard {decision.lower()} successfully. Status updated from {old_status} to {hazard.status}',
