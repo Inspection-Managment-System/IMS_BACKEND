@@ -59,6 +59,7 @@ class HSERiskAssessmentSerializer(serializers.ModelSerializer):
             'hse_mitigation_assigned_to', 'hse_mitigation_assigned_to_id',
             'hse_mitigation_target_date', 'hse_mitigation_evidence',
             'hse_mitigation_completed', 'hse_risk_closed', 'hse_risk_rejection_reason',
+            'assigned_department',
         ]
         read_only_fields = ['id', 'name', 'changed_on']
     

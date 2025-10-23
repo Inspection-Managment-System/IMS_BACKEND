@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 
 from inspection_management.models import Evince, BusinessUnit, InspectionAnalysis, InspectionPoint
 from api.serializers.hse_risk_assessment import (
@@ -12,6 +13,7 @@ from api.serializers.hse_risk_assessment import (
     HSERiskAssessmentUpdateSerializer
 )
 from api.viewsets.evince import EvinceViewSet
+from users.authorization import role_required
 
 
 class HSERiskAssessmentViewSet(EvinceViewSet):
@@ -19,6 +21,11 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
     
     queryset = Evince.objects.filter(evince_type='hse_risk_management')
     permission_classes = [IsAuthenticated]
+    
+    @method_decorator(role_required(allowed_roles=["Admin", "Manager", "Inspector", "Mitigation User"]))
+    def dispatch(self, request, *args, **kwargs):
+        """Override dispatch to allow Mitigation User access"""
+        return super(EvinceViewSet, self).dispatch(request, *args, **kwargs)
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action"""
@@ -31,6 +38,7 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
     def list(self, request, *args, **kwargs):
         """Override list method to handle HSE-specific filtering without user_id dependency"""
         user = request.user
+        print(f"🔍 List method called by user: {user.username}")
         queryset = self.queryset
         
         # Filter by status if provided
@@ -56,6 +64,7 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
         # Role-based filtering
         if hasattr(user, 'userprofile') and user.userprofile.role:
             role = user.userprofile.role.name.upper()
+            print(f"🔍 List method - User role: {role}")
             if role == 'ADMIN':
                 # Admin can see all HSE risk assessments
                 pass
@@ -72,6 +81,9 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                     Q(assigned_to=user) |
                     Q(hse_mitigation_assigned_to=user)
                 )
+            elif role == 'MITIGATION USER':
+                # Mitigation User can only see HSE risk assessments assigned to them for mitigation
+                queryset = queryset.filter(hse_mitigation_assigned_to=user)
             else:
                 # Other users can only see assessments assigned to them
                 queryset = queryset.filter(
@@ -132,6 +144,9 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                     Q(assigned_to=user) |
                     Q(hse_mitigation_assigned_to=user)
                 )
+            elif role == 'MITIGATION USER':
+                # Mitigation User can only see HSE risk assessments assigned to them for mitigation
+                queryset = queryset.filter(hse_mitigation_assigned_to=user)
             else:
                 # Other users can only see assessments assigned to them
                 queryset = queryset.filter(
@@ -242,6 +257,8 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             'inspector_review': queryset.filter(status='InspectorReview').count(),
             'risk_validated': queryset.filter(status='RiskValidated').count(),
             'manager_assignment': queryset.filter(status='ManagerAssignment').count(),
+            'mitigation_in_progress': queryset.filter(status='MitigationInProgress').count(),
+            'mitigation_completed': queryset.filter(status='MitigationCompleted').count(),
             'lims_in_progress': queryset.filter(status='LIMSInProgress').count(),
             'lims_completed': queryset.filter(status='LIMSCompleted').count(),
             'manager_approval': queryset.filter(status='ManagerApproval').count(),
@@ -350,17 +367,57 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
+        # Handle department assignment - check if it's internal or external
+        department_id = request.data.get('hse_mitigation_department')
+        from inspection_management.models.external_departments import ExternalDepartment
+        
+        try:
+            department = ExternalDepartment.objects.get(id=department_id)
+            print(f"Assigning to department: {department.name}")
+            
+            # For internal departments, we need to handle the BusinessUnit foreign key
+            if department.name.startswith('Internal'):
+                # For internal departments, we'll use the assigned_department field instead
+                # and set hse_mitigation_department to None or a default BusinessUnit
+                evince.assigned_department = department.name
+                evince.hse_mitigation_department = None  # Don't set the BusinessUnit foreign key
+                print(f"Internal department assignment: {department.name}")
+                print(f"Set evince.assigned_department to: {evince.assigned_department}")
+            else:
+                # For external departments, use the existing logic
+                evince.assigned_department = department.name
+                evince.hse_mitigation_department = None  # External departments don't map to BusinessUnits
+                print(f"External department assignment: {department.name}")
+                print(f"Set evince.assigned_department to: {evince.assigned_department}")
+                
+        except ExternalDepartment.DoesNotExist:
+            return Response(
+                {'error': f'Department with ID {department_id} not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         # Update evince with mitigation assignment
-        evince.hse_mitigation_department_id = request.data.get('hse_mitigation_department')
         evince.hse_mitigation_assigned_to_id = request.data.get('hse_mitigation_assigned_to')
         evince.hse_mitigation_target_date = request.data.get('hse_mitigation_target_date')
-        # Keep status as RiskValidated - don't change to ManagerAssignment
-        # evince.status = 'ManagerAssignment'
+        
+        # Save the mitigation plan/instructions if provided
+        if 'hse_mitigation_actions' in request.data:
+            evince.hse_mitigation_actions = request.data.get('hse_mitigation_actions')
+            print(f"Saved mitigation actions: {evince.hse_mitigation_actions}")
+        
+        # Change status to MitigationInProgress when assignment is made
+        evince.status = 'MitigationInProgress'
         evince.save()
+        
+        # Debug: Check what was actually saved
+        print(f"After save - evince.assigned_department: {evince.assigned_department}")
+        print(f"After save - evince.hse_mitigation_department: {evince.hse_mitigation_department}")
+        print(f"After save - evince.status: {evince.status}")
         
         return Response({
             'message': 'Mitigation work assigned successfully',
-            'status': evince.status
+            'status': evince.status,
+            'assigned_department': evince.assigned_department
         })
     
     @action(detail=True, methods=['post'], url_path='submit-mitigation-evidence')
@@ -386,7 +443,7 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
         evince.hse_mitigation_actions = request.data.get('hse_mitigation_actions')
         evince.hse_mitigation_evidence = request.data.get('hse_mitigation_evidence', '')
         evince.hse_mitigation_completed = True
-        evince.status = 'LIMSCompleted'
+        evince.status = 'MitigationCompleted'
         evince.save()
         
         return Response({
@@ -418,7 +475,105 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             'status': evince.status
         })
     
-    @action(detail=False, methods=['get'], url_path='workflow-states', permission_classes=[])
+    @action(detail=True, methods=['post'], url_path='approve-mitigation')
+    def approve_mitigation(self, request, pk=None):
+        """Manager approves mitigation work"""
+        evince = self.get_object()
+        
+        # Check if user has manager permissions
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.role.name.upper() not in ['ADMIN', 'MANAGER']:
+            return Response(
+                {'error': 'Only managers can approve mitigation work'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if mitigation is completed
+        if not evince.hse_mitigation_completed:
+            return Response(
+                {'error': 'Mitigation work must be completed before approval'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update evince with approval
+        evince.hse_approved_by = request.user
+        evince.hse_approved_at = timezone.now()
+        evince.hse_risk_closed = True
+        evince.status = 'Approved'
+        evince.save()
+        
+        return Response({
+            'message': 'Mitigation work approved successfully',
+            'status': evince.status
+        })
+    
+    @action(detail=True, methods=['post'], url_path='reject-mitigation')
+    def reject_mitigation(self, request, pk=None):
+        """Manager rejects mitigation work"""
+        evince = self.get_object()
+        
+        # Check if user has manager permissions
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.role.name.upper() not in ['ADMIN', 'MANAGER']:
+            return Response(
+                {'error': 'Only managers can reject mitigation work'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validate required fields
+        if 'rejection_reason' not in request.data:
+            return Response(
+                {'error': 'Missing required field: rejection_reason'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update evince status and reset mitigation
+        evince.status = 'Rejected'
+        evince.hse_mitigation_completed = False
+        evince.hse_mitigation_actions = None
+        evince.hse_mitigation_evidence = None
+        evince.save()
+        
+        return Response({
+            'message': 'Mitigation work rejected successfully',
+            'status': evince.status
+        })
+    
+    @action(detail=True, methods=['post'], url_path='reassign-mitigation')
+    def reassign_mitigation(self, request, pk=None):
+        """Manager reassigns mitigation work"""
+        evince = self.get_object()
+        
+        # Check if user has manager permissions
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.role.name.upper() not in ['ADMIN', 'MANAGER']:
+            return Response(
+                {'error': 'Only managers can reassign mitigation work'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validate required fields
+        if 'department_id' not in request.data:
+            return Response(
+                {'error': 'Missing required field: department_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Reset mitigation fields
+        evince.hse_mitigation_completed = False
+        evince.hse_mitigation_actions = None
+        evince.hse_mitigation_evidence = None
+        evince.status = 'MitigationInProgress'
+        
+        # Update assignment details
+        evince.assigned_department = request.data.get('department_name', '')
+        evince.hse_mitigation_target_date = request.data.get('target_date')
+        evince.hse_mitigation_assigned_date = timezone.now()
+        evince.save()
+        
+        return Response({
+            'message': 'Mitigation work reassigned successfully',
+            'status': evince.status
+        })
+    
+    @action(detail=False, methods=['get'], url_path='workflow-states')
     def workflow_states(self, request):
         """Get available workflow states for HSE Risk Assessment"""
         states = [
@@ -437,7 +592,7 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
         
         return Response(states)
     
-    @action(detail=False, methods=['get'], url_path='risk-levels', permission_classes=[])
+    @action(detail=False, methods=['get'], url_path='risk-levels')
     def risk_levels(self, request):
         """Get available risk levels"""
         risk_levels = [
@@ -448,7 +603,7 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
         ]
         return Response(risk_levels)
     
-    @action(detail=False, methods=['get'], url_path='risk-categories', permission_classes=[])
+    @action(detail=False, methods=['get'], url_path='risk-categories')
     def risk_categories(self, request):
         """Get available risk categories"""
         categories = [
@@ -606,6 +761,10 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             evince.status = 'MitigationInProgress'
             evince.assigned_department = new_department.name
             evince.hse_risk_rejection_reason = f"Reassigned to {new_department.name}. Reason: {reassignment_reason}"
+            # Reset mitigation completion status when reassigning
+            evince.hse_mitigation_completed = False
+            evince.hse_mitigation_actions = None
+            evince.hse_mitigation_evidence = None
             evince.save()
             
             # Update existing assignment record instead of creating new one
@@ -759,5 +918,242 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             print(f"❌ Traceback: {traceback.format_exc()}")
             return Response(
                 {'error': f'Failed to reassign mitigation: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    # ============== MITIGATION USER ENDPOINTS ==============
+    
+    @action(detail=False, methods=['get'], url_path='mitigation-users')
+    def get_mitigation_users(self, request):
+        """Get list of users with Mitigation User role for manager to assign"""
+        from django.contrib.auth.models import Group
+        from users.models import User
+        from inspection_management.models.external_departments import ExternalDepartment
+        
+        try:
+            # Get Mitigation User group
+            mitigation_group = Group.objects.get(name='Mitigation User')
+            print(f"Found Mitigation User group: {mitigation_group.name}")
+            
+            # Get users in this group
+            mitigation_users = User.objects.filter(groups=mitigation_group, is_active=True)
+            print(f"Found {mitigation_users.count()} mitigation users")
+            
+            # Check if filtering by department
+            department_id = getattr(request, 'query_params', {}).get('department_id') or request.GET.get('department_id')
+            if department_id:
+                try:
+                    department = ExternalDepartment.objects.get(id=department_id)
+                    print(f"Filtering mitigation users for department: {department.name}")
+                    
+                    # For internal departments, return all mitigation users
+                    # For external departments, return empty list (no internal users)
+                    if department.name.startswith('Internal'):
+                        print(f"Internal department detected, returning all mitigation users")
+                        # Keep all mitigation users for internal departments
+                    else:
+                        print(f"External department detected, returning empty list")
+                        # Return empty list for external departments
+                        mitigation_users = mitigation_users.none()
+                        
+                except ExternalDepartment.DoesNotExist:
+                    print(f"Department with ID {department_id} not found")
+                    return Response(
+                        {'error': f'Department with ID {department_id} not found'},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+            
+            users_data = []
+            for user in mitigation_users:
+                users_data.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'full_name': f"{user.first_name} {user.last_name}".strip() or user.username
+                })
+            
+            print(f"Returning {len(users_data)} mitigation users")
+            return Response(users_data)
+        except Group.DoesNotExist:
+            print("Mitigation User group not found")
+            return Response(
+                {'error': 'Mitigation User role not found. Please run: python manage.py create_mitigation_user_role'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            print(f"Unexpected error in get_mitigation_users: {str(e)}")
+            return Response(
+                {'error': f'Unexpected error: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='my-mitigation-tasks')
+    def my_mitigation_tasks(self, request):
+        """Get mitigation tasks assigned to current user (for Mitigation User dashboard)"""
+        try:
+            user = request.user
+            print(f"🔍 my_mitigation_tasks called by user: {user.username}")
+            
+            # Check if user has Mitigation User role
+            if not hasattr(user, 'userprofile') or not user.userprofile.role:
+                print(f"❌ User profile or role not found for user: {user.username}")
+                return Response(
+                    {'error': 'User profile or role not found'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            role = user.userprofile.role.name
+            print(f"🔍 User role: {role}")
+            if role not in ['Mitigation User', 'Admin']:
+                print(f"❌ User {user.username} with role {role} not authorized")
+                return Response(
+                    {'error': 'Only Mitigation Users can access this endpoint'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get HSE risk assessments assigned to this user for mitigation
+            queryset = self.queryset.filter(hse_mitigation_assigned_to=user)
+            print(f"🔍 Found {queryset.count()} tasks assigned to user {user.username}")
+            
+            # Filter by status if provided
+            status_filter = getattr(request, 'query_params', {}).get('status') or request.GET.get('status')
+            if status_filter:
+                queryset = queryset.filter(status=status_filter)
+                print(f"🔍 Filtered by status {status_filter}: {queryset.count()} tasks")
+            
+            # Filter by risk level if provided
+            risk_level = getattr(request, 'query_params', {}).get('risk_level') or request.GET.get('risk_level')
+            if risk_level:
+                queryset = queryset.filter(hse_risk_level=risk_level)
+                print(f"🔍 Filtered by risk level {risk_level}: {queryset.count()} tasks")
+            
+            # Order by target date (newest first)
+            ordered_queryset = queryset.order_by('-hse_mitigation_target_date', '-id')
+            
+            # Apply pagination
+            page = self.paginate_queryset(ordered_queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                print(f"🔍 Returning paginated response with {len(serializer.data)} tasks")
+                paginated_response = self.get_paginated_response(serializer.data)
+                print(f"🔍 Paginated response keys: {paginated_response.data.keys() if hasattr(paginated_response.data, 'keys') else 'Not a dict'}")
+                return paginated_response
+            
+            # No pagination, return all results in proper format
+            serializer = self.get_serializer(ordered_queryset, many=True)
+            print(f"🔍 Returning all {len(serializer.data)} tasks without pagination")
+            # Return in the same format as paginated response
+            return Response({
+                'results': serializer.data,
+                'count': len(serializer.data),
+                'pageCount': 1,
+                'next': None,
+                'previous': None
+            })
+            
+        except Exception as e:
+            print(f"❌ Error in my_mitigation_tasks: {str(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response(
+                {'error': f'Internal server error: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'], url_path='submit-mitigation-work')
+    def submit_mitigation_work(self, request, pk=None):
+        """Mitigation User submits completed mitigation work"""
+        evince = self.get_object()
+        user = request.user
+        
+        # Validate that user is assigned mitigation user
+        if evince.hse_mitigation_assigned_to != user:
+            return Response(
+                {'error': 'Only assigned mitigation user can submit work'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validate required fields
+        mitigation_actions = request.data.get('hse_mitigation_actions')
+        if not mitigation_actions:
+            return Response(
+                {'error': 'Mitigation actions are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update evince with mitigation work
+        evince.hse_mitigation_actions = mitigation_actions
+        evince.hse_mitigation_evidence = request.data.get('hse_mitigation_evidence', '')
+        evince.hse_mitigation_completed = True
+        evince.status = 'MitigationCompleted'
+        evince.changed_by = user
+        evince.changed_on = timezone.now()
+        evince.save()
+        
+        return Response({
+            'message': 'Mitigation work submitted successfully',
+            'status': evince.status,
+            'evince_id': evince.id
+        })
+    
+    @action(detail=False, methods=['get'], url_path='mitigation-dashboard-stats')
+    def mitigation_dashboard_stats(self, request):
+        """Get statistics for Mitigation User dashboard"""
+        try:
+            user = request.user
+            print(f"🔍 mitigation_dashboard_stats called by user: {user.username}")
+            
+            # Check if user has Mitigation User role
+            if not hasattr(user, 'userprofile') or not user.userprofile.role:
+                print(f"❌ User profile or role not found for user: {user.username}")
+                return Response(
+                    {'error': 'User profile or role not found'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            role = user.userprofile.role.name
+            print(f"🔍 User role: {role}")
+            if role not in ['Mitigation User', 'Admin']:
+                print(f"❌ User {user.username} with role {role} not authorized")
+                return Response(
+                    {'error': 'Only Mitigation Users can access this endpoint'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get all mitigation tasks assigned to user
+            queryset = self.queryset.filter(hse_mitigation_assigned_to=user)
+            print(f"🔍 Found {queryset.count()} total tasks for user {user.username}")
+            
+            stats = {
+                'total_tasks': queryset.count(),
+                'pending': queryset.filter(hse_mitigation_completed=False).count(),
+                'completed': queryset.filter(hse_mitigation_completed=True, status='MitigationCompleted').count(),
+                'approved': queryset.filter(status='Approved').count(),
+                'overdue': queryset.filter(
+                    hse_mitigation_completed=False,
+                    hse_mitigation_target_date__lt=timezone.now()
+                ).count(),
+            }
+            
+            # Risk level distribution
+            risk_distribution = {}
+            for level in ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']:
+                count = queryset.filter(hse_risk_level=level).count()
+                if count > 0:
+                    risk_distribution[level] = count
+            
+            stats['risk_distribution'] = risk_distribution
+            
+            print(f"🔍 Returning stats: {stats}")
+            return Response(stats)
+            
+        except Exception as e:
+            print(f"❌ Error in mitigation_dashboard_stats: {str(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response(
+                {'error': f'Internal server error: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

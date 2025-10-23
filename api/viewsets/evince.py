@@ -24,7 +24,7 @@ from ims_backend.utils.send_email import send_email
 
 
 @method_decorator(
-    role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
+    role_required(allowed_roles=["Admin", "Manager", "Inspector", "Mitigation User"]), name="dispatch"
 )
 class EvinceViewSet(viewsets.ModelViewSet):
     queryset = Evince.objects.all().order_by("-id")
@@ -355,6 +355,24 @@ class EvinceViewSet(viewsets.ModelViewSet):
         """
         Fetch the results and related parameters for a specific Evince.
         """
+        # Check if user is mitigation user and has access to this evince
+        user = request.user
+        user_profile = user.userprofile
+        
+        if user_profile.role.name == "Mitigation User":
+            # Check if this evince is assigned to the mitigation user
+            try:
+                evince = Evince.objects.get(id=pk)
+                if evince.hse_mitigation_assigned_to != user:
+                    return Response(
+                        {"error": "You don't have permission to access this evince"},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except Evince.DoesNotExist:
+                return Response(
+                    {"error": "Evince not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
         inspection_results = InspectionResult.objects.filter(evince_id=pk).select_related(
             "inspection_test__inspection_analysis"
         )
