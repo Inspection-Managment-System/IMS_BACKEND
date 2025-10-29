@@ -39,17 +39,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "ims_backend.wsgi.application"
 
 DATABASES = {
-    # "default": {
-    #     "ENGINE": config("DB_ENGINE"),
-    #     "NAME": BASE_DIR / config("DB_NAME"),
-    # },
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "ims_db",
-        "USER": "postgres",
-        "PASSWORD": "admin123",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     },
     "LW8Process": {
         "ENGINE": config("LW8_DB_ENGINE"),

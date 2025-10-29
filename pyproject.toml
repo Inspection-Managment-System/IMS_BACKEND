@@ -1,2 +1,0 @@
-[tool.isort]
-skip = ["__init__.py", "venv"]
