@@ -279,6 +279,77 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
         
         return Response(stats)
     
+    # ============== NEW: OBSERVATION-ONLY RISK CREATION ==============
+    
+    @action(detail=False, methods=['post'], url_path='create-observation-risk')
+    def create_observation_risk(self, request):
+        """
+        Create a manual observation-only HSE risk assessment without parameters.
+        This is for inspectors/users to flag HSE risks based on observations.
+        """
+        try:
+            user = request.user
+            print(f"🔍 Creating observation-only risk by user: {user.username}")
+            
+            # Required fields
+            evince_id = request.data.get('evince_id')
+            observation_details = request.data.get('hse_observation_details')
+            risk_level = request.data.get('hse_risk_level')
+            risk_category = request.data.get('hse_risk_category')
+            
+            # Validate required fields
+            if not evince_id:
+                return Response(
+                    {'error': 'evince_id is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not observation_details:
+                return Response(
+                    {'error': 'observation_details is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get the evince
+            try:
+                evince = Evince.objects.get(id=evince_id)
+            except Evince.DoesNotExist:
+                return Response(
+                    {'error': f'Evince with ID {evince_id} not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Update evince to mark it as observation-only risk
+            evince.hse_risk_trigger_type = 'MANUAL_OBSERVATION'
+            evince.hse_has_parameters = False
+            evince.hse_observation_details = observation_details
+            evince.hse_risk_level = risk_level or 'MEDIUM'
+            evince.hse_risk_category = risk_category or 'Safety'
+            evince.hse_risk_notes = request.data.get('hse_risk_notes', '')
+            
+            # Update status to Inspector Review (same as parameter-based)
+            evince.status = 'InspectorReview'
+            evince.save()
+            
+            print(f"✅ Observation-only risk created for evince {evince.id}")
+            
+            # Serialize and return the updated evince
+            serializer = HSERiskAssessmentSerializer(evince)
+            
+            return Response({
+                'message': 'Observation-only HSE risk created successfully',
+                'evince': serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            print(f"❌ Error creating observation-only risk: {str(e)}")
+            return Response(
+                {'error': f'Failed to create observation risk: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    # ============== END NEW ENDPOINT ==============
+    
     @action(detail=True, methods=['post'], url_path='assess-risk')
     def assess_risk(self, request, pk=None):
         """Inspector assesses the risk"""
@@ -440,11 +511,18 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             )
         
         # Update evince with mitigation evidence
-        evince.hse_mitigation_actions = request.data.get('hse_mitigation_actions')
-        evince.hse_mitigation_evidence = request.data.get('hse_mitigation_evidence', '')
+        # KEEP manager's instructions in hse_mitigation_actions (DON'T overwrite!)
+        # Save mitigation user's work in NEW field hse_mitigation_work_done
+        evince.hse_mitigation_work_done = request.data.get('hse_mitigation_actions')  # User's work
+        evince.hse_mitigation_evidence = request.data.get('hse_mitigation_evidence', '')  # Additional evidence
+        # DON'T touch hse_mitigation_actions - it contains manager's instructions
         evince.hse_mitigation_completed = True
         evince.status = 'MitigationCompleted'
         evince.save()
+        
+        print(f"✅ Manager's Instructions PRESERVED: {evince.hse_mitigation_actions}")
+        print(f"✅ Mitigation Work Done (user's actions): {evince.hse_mitigation_work_done}")
+        print(f"✅ Mitigation Evidence (additional notes): {evince.hse_mitigation_evidence}")
         
         return Response({
             'message': 'Mitigation evidence submitted successfully',
@@ -525,11 +603,12 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Update evince status and reset mitigation
+        # Update evince status and reset mitigation work (preserve manager's instructions)
         evince.status = 'Rejected'
         evince.hse_mitigation_completed = False
-        evince.hse_mitigation_actions = None
-        evince.hse_mitigation_evidence = None
+        # DON'T reset hse_mitigation_actions - it contains manager's original instructions
+        evince.hse_mitigation_work_done = None  # Clear the user's work
+        evince.hse_mitigation_evidence = None  # Clear additional evidence
         evince.save()
         
         return Response({
@@ -556,10 +635,11 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Reset mitigation fields
+        # Reset mitigation work (preserve manager's instructions)
         evince.hse_mitigation_completed = False
-        evince.hse_mitigation_actions = None
-        evince.hse_mitigation_evidence = None
+        # DON'T reset hse_mitigation_actions - it contains manager's original instructions
+        evince.hse_mitigation_work_done = None  # Clear the user's work
+        evince.hse_mitigation_evidence = None  # Clear additional evidence
         evince.status = 'MitigationInProgress'
         
         # Update assignment details
@@ -761,10 +841,11 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             evince.status = 'MitigationInProgress'
             evince.assigned_department = new_department.name
             evince.hse_risk_rejection_reason = f"Reassigned to {new_department.name}. Reason: {reassignment_reason}"
-            # Reset mitigation completion status when reassigning
+            # Reset mitigation completion status when reassigning (preserve manager's instructions)
             evince.hse_mitigation_completed = False
-            evince.hse_mitigation_actions = None
-            evince.hse_mitigation_evidence = None
+            # DON'T reset hse_mitigation_actions - it contains manager's original instructions
+            evince.hse_mitigation_work_done = None  # Clear the user's work
+            evince.hse_mitigation_evidence = None  # Clear additional evidence
             evince.save()
             
             # Update existing assignment record instead of creating new one
@@ -1062,41 +1143,8 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    @action(detail=True, methods=['post'], url_path='submit-mitigation-work')
-    def submit_mitigation_work(self, request, pk=None):
-        """Mitigation User submits completed mitigation work"""
-        evince = self.get_object()
-        user = request.user
-        
-        # Validate that user is assigned mitigation user
-        if evince.hse_mitigation_assigned_to != user:
-            return Response(
-                {'error': 'Only assigned mitigation user can submit work'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Validate required fields
-        mitigation_actions = request.data.get('hse_mitigation_actions')
-        if not mitigation_actions:
-            return Response(
-                {'error': 'Mitigation actions are required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Update evince with mitigation work
-        evince.hse_mitigation_actions = mitigation_actions
-        evince.hse_mitigation_evidence = request.data.get('hse_mitigation_evidence', '')
-        evince.hse_mitigation_completed = True
-        evince.status = 'MitigationCompleted'
-        evince.changed_by = user
-        evince.changed_on = timezone.now()
-        evince.save()
-        
-        return Response({
-            'message': 'Mitigation work submitted successfully',
-            'status': evince.status,
-            'evince_id': evince.id
-        })
+    # REMOVED: Old submit-mitigation-work endpoint (was overwriting manager's instructions)
+    # Use submit-mitigation-evidence endpoint instead (line 495)
     
     @action(detail=False, methods=['get'], url_path='mitigation-dashboard-stats')
     def mitigation_dashboard_stats(self, request):

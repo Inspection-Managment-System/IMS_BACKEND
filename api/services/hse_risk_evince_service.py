@@ -142,6 +142,11 @@ class HSERiskEvinceService:
         out_of_spec_results = risk_assessment_data.get('out_of_spec_results', [])
         evince.hse_out_of_spec_results = out_of_spec_results
         
+        # NEW: Set trigger type for parameter-based assessments (auto-triggered from out-of-spec)
+        if not evince.hse_risk_trigger_type:  # Only set if not already set
+            evince.hse_risk_trigger_type = 'AUTO_OUT_OF_SPEC'
+            evince.hse_has_parameters = True
+        
         # Check if there are out-of-spec results
         if out_of_spec_results and len(out_of_spec_results) > 0:
             # Out-of-spec results found - set risk level but keep status as RiskValidated

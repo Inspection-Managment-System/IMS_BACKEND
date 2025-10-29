@@ -118,9 +118,26 @@ class Evince(models.Model):
     hse_mitigation_assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="hse_mitigation_assignments", null=True, blank=True, help_text="User assigned for mitigation work")
     hse_mitigation_target_date = models.DateTimeField(blank=True, null=True, help_text="Target date for mitigation completion")
     hse_mitigation_evidence = models.TextField(blank=True, null=True, help_text="Evidence submitted by mitigation department")
+    hse_mitigation_work_done = models.TextField(blank=True, null=True, help_text="Actual mitigation work performed by mitigation user (separate from manager's instructions)")
     hse_mitigation_completed = models.BooleanField(default=False, help_text="Whether mitigation work is completed")
     hse_risk_closed = models.BooleanField(default=False, help_text="Whether risk observation is closed")
     hse_risk_rejection_reason = models.TextField(blank=True, null=True, help_text="Reason for risk rejection if not valid")
+    
+    # HSE Risk Trigger Type (new field for observation-only vs parameter-based)
+    hse_risk_trigger_type = models.CharField(
+        max_length=25, 
+        blank=True, 
+        null=True,
+        choices=[
+            ('AUTO_OUT_OF_SPEC', 'Automatic - Out of Spec Parameters'),
+            ('MANUAL_OBSERVATION', 'Manual - Observation Only'),
+        ],
+        help_text="How this HSE risk assessment was triggered (automatic from parameters or manual observation)"
+    )
+    hse_has_parameters = models.BooleanField(
+        default=True,
+        help_text="Whether this HSE risk assessment has associated parameter measurements"
+    )
 
     @classmethod
     def get_status_labels(cls):

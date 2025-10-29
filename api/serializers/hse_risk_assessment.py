@@ -58,8 +58,12 @@ class HSERiskAssessmentSerializer(serializers.ModelSerializer):
             'hse_mitigation_department', 'hse_mitigation_department_id',
             'hse_mitigation_assigned_to', 'hse_mitigation_assigned_to_id',
             'hse_mitigation_target_date', 'hse_mitigation_evidence',
+            'hse_mitigation_work_done', # NEW: Actual work done by mitigation user
             'hse_mitigation_completed', 'hse_risk_closed', 'hse_risk_rejection_reason',
             'assigned_department',
+            
+            # NEW: Observation-only vs parameter-based fields
+            'hse_risk_trigger_type', 'hse_has_parameters',
         ]
         read_only_fields = ['id', 'name', 'changed_on']
     
@@ -124,13 +128,13 @@ class HSERiskAssessmentCreateSerializer(serializers.ModelSerializer):
     reviewed_by = RelatedFieldSerializer(queryset=User.objects.all(), serializer=UserSerializer)
     
     # Custom fields for frontend data that don't exist on the model
-    company = serializers.CharField(write_only=True, required=False)
-    site = serializers.CharField(write_only=True, required=False)
-    analysis_type = serializers.CharField(write_only=True, required=False)
-    inspection_analysis = serializers.CharField(write_only=True, required=False)
-    parameters = serializers.ListField(write_only=True, required=False)
-    sample_required = serializers.BooleanField(write_only=True, required=False)
-    sample_content = serializers.JSONField(write_only=True, required=False)
+    company = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    site = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    analysis_type = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    inspection_analysis = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    parameters = serializers.ListField(write_only=True, required=False, allow_null=True)
+    sample_required = serializers.BooleanField(write_only=True, required=False, allow_null=True)
+    sample_content = serializers.JSONField(write_only=True, required=False, allow_null=True)
     
     class Meta:
         model = Evince
@@ -141,7 +145,9 @@ class HSERiskAssessmentCreateSerializer(serializers.ModelSerializer):
             'crtical_instructions_file_name', 'reassigned',
             # Custom fields that are write_only
             'company', 'site', 'analysis_type', 'inspection_analysis', 'parameters',
-            'sample_required', 'sample_content'
+            'sample_required', 'sample_content',
+            # NEW: Observation-only fields
+            'hse_risk_trigger_type', 'hse_has_parameters',
         ]
         extra_kwargs = {
             'changed_by': {'required': True},
