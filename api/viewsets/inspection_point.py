@@ -12,17 +12,21 @@ from users.authorization import role_required
 from users.models.audit_history import AuditHistory
 from users.models.notification import Notification
 from inspection_management.models.inspection_point import LocationRestrictionSetting
+from api.mixins import DataGroupFilterMixin
 
 
 @method_decorator(
     role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
 )
-class InspectionPointViewSet(viewsets.ModelViewSet):
+class InspectionPointViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
     queryset = InspectionPoint.objects.all()
     serializer_class = InspectionPointSerializer
     permission_classes = [permissions.IsAuthenticated]
+    data_group_field = 'group'  # Filter by user's data groups
+    apply_to_admin = True  # Admins are also filtered by their assigned data groups
 
     def list(self, request, *args, **kwargs):
+        # Preserve existing business_unit filter logic
         business_unit_name = request.query_params.get("business_unit", None)
         if business_unit_name:
             related_inspection_points = (

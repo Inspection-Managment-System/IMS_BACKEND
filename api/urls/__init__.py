@@ -84,4 +84,5 @@ urlpatterns = [
     path("auth/", include("api.urls.user")),
     path("samples/", SampleViewSet.as_view()),
     path("", include("api.urls.hse")),
+    path("setup/", include("api.urls.setup")),
 ]

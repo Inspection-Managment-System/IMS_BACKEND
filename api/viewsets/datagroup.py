@@ -13,6 +13,33 @@ class DatagroupViewSet(viewsets.ModelViewSet):
     queryset = DataGroup.objects.all()
     serializer_class = DataGroupSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        For management (?for_management=true): Admins see ALL groups
+        For assignment (?assignable=true or default): Users see only their ASSIGNED groups
+        """
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        # Check query parameter
+        for_management = self.request.query_params.get('for_management', 'false').lower() == 'true'
+        
+        # If for_management=true: Admins see all groups (for Data Groups page)
+        if for_management:
+            if user.is_authenticated:
+                if hasattr(user, 'userprofile') and user.userprofile.role:
+                    if user.userprofile.role.name == 'Admin':
+                        return queryset  # Admin sees all for management
+            if user.is_superuser:
+                return queryset
+        
+        # Default behavior: Return only assigned groups (for dropdowns/assignments)
+        if hasattr(user, 'userprofile'):
+            user_data_groups = user.userprofile.data_groups.all()
+            return user_data_groups
+        
+        return queryset.none()
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

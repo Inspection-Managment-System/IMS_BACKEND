@@ -6,6 +6,7 @@ from api.serializers import DataListSerializer
 from inspection_management.models import DataList
 from users.authorization import role_required
 from users.models.audit_history import AuditHistory
+from api.mixins import DataGroupFilterMixin
 
 
 @method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
@@ -13,8 +14,10 @@ class DataListViewSet(viewsets.ModelViewSet):
     queryset = DataList.objects.all()
     serializer_class = DataListSerializer
     permission_classes = [permissions.IsAuthenticated]
+    # Note: DataList has no group field - shared across all data groups
 
     def list(self, request, *args, **kwargs):
+        # Preserve existing pagination logic
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
         if page is not None:

@@ -7,17 +7,21 @@ from ims_backend.utils.helper import get_related_business_units_from_site
 from inspection_management.models import BusinessUnit, Site
 from users.authorization import role_required
 from users.models.audit_history import AuditHistory
+from api.mixins import DataGroupFilterMixin
 
 
 @method_decorator(
     role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
 )
-class BusinessUnitViewSet(viewsets.ModelViewSet):
+class BusinessUnitViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
     queryset = BusinessUnit.objects.all()
     serializer_class = BusinessUnitSerializer
     permission_classes = [permissions.IsAuthenticated]
+    data_group_field = 'group'  # Filter by user's data groups
+    apply_to_admin = True  # Admins are also filtered by their assigned data groups
 
     def list(self, request, *args, **kwargs):
+        # Preserve existing site filter logic
         site_name = request.query_params.get("site", None)
         if site_name:
             related_business_units = get_related_business_units_from_site(site_name)

@@ -6,15 +6,18 @@ from api.serializers import ComapnyGetSerializer, ComapnySerializer
 from inspection_management.models import Company, DataGroup
 from users.authorization import role_required
 from users.models.audit_history import AuditHistory
+from api.mixins import DataGroupFilterMixin
 
 
 @method_decorator(
     role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
 )
-class CompanyViewSet(viewsets.ModelViewSet):
+class CompanyViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
     queryset = Company.objects.all()
     serializer_class = ComapnySerializer
     permission_classes = [permissions.IsAuthenticated]
+    data_group_field = 'group'  # Filter by user's data groups
+    apply_to_admin = True  # Admins are also filtered by their assigned data groups
 
     def list(self, request, *args, **kwargs):
         self.serializer_class = ComapnyGetSerializer

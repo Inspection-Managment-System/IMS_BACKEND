@@ -5,15 +5,18 @@ from rest_framework.response import Response
 from api.serializers import AnalysisTypeSerializer
 from inspection_management.models import AnalysisType, DataGroup
 from users.authorization import role_required
+from api.mixins import DataGroupFilterMixin
 
 
 @method_decorator(
     role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch"
 )
-class AnalysisTypeViewSet(viewsets.ModelViewSet):
+class AnalysisTypeViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
     queryset = AnalysisType.objects.all()
     serializer_class = AnalysisTypeSerializer
     permission_classes = [permissions.IsAuthenticated]
+    data_group_field = 'group'  # Filter by user's data groups
+    apply_to_admin = True  # Admins are also filtered by their assigned data groups
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

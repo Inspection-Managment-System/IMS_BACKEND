@@ -7,15 +7,18 @@ from inspection_management.models import (DataGroup, Equipment, EquipmentType,
                                           Location)
 from users.authorization import role_required
 from users.models.audit_history import AuditHistory
+from api.mixins import DataGroupFilterMixin
 
 
 @method_decorator(
     role_required(allowed_roles=["Admin", "Inspector", "Manager"]), name="dispatch"
 )
-class EquipmentViewSet(viewsets.ModelViewSet):
+class EquipmentViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    data_group_field = 'group'  # Filter by user's data groups
+    apply_to_admin = True  # Admins are also filtered by their assigned data groups
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

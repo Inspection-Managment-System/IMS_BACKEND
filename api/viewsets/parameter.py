@@ -7,15 +7,19 @@ from inspection_management.models import (AnalysisType, DataGroup,
                                           InspectionAnalysis, Parameter, Unit)
 from users.authorization import role_required
 from users.models.audit_history import AuditHistory
+from api.mixins import DataGroupFilterMixin
 
 
 @method_decorator(role_required(allowed_roles=["Admin", "Manager", "Inspector"]), name="dispatch")
-class ParameterViewSet(viewsets.ModelViewSet):
+class ParameterViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
     queryset = Parameter.objects.all()
     serializer_class = ParameterSerializer
     permission_classes = [permissions.IsAuthenticated]
+    data_group_field = 'group'  # Filter by user's data groups
+    apply_to_admin = True  # Admins are also filtered by their assigned data groups
 
     def list(self, request, *args, **kwargs):
+        # Preserve existing inspection_analysis filter logic
         inspection_analysis_name = request.query_params.get("inspection_analysis", None)
         if inspection_analysis_name:
             try:
