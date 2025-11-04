@@ -85,4 +85,5 @@ urlpatterns = [
     path("samples/", SampleViewSet.as_view()),
     path("", include("api.urls.hse")),
     path("setup/", include("api.urls.setup")),
+    path("issue-management/", include("api.urls.issue_management")),
 ]

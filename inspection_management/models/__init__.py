@@ -36,3 +36,6 @@ from .external_departments import (
     ExternalDepartment,
     ExternalDepartmentAssignment
 )
+from .risk_level import RiskLevel
+from .risk_category import RiskCategory
+from .hse_observation_type import HSEObservationType

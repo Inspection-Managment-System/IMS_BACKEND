@@ -1,6 +1,6 @@
 from django.db import models
 
-from inspection_management.models import Evince, InspectionTest
+from inspection_management.models import Evince, InspectionTest, Parameter
 from users.models.user import User
 
 
@@ -11,6 +11,13 @@ class InspectionResult(models.Model):
     ]
     evince = models.ForeignKey(Evince, on_delete=models.CASCADE)
     inspection_test = models.ForeignKey(InspectionTest, on_delete=models.CASCADE)
+    parameter = models.ForeignKey(
+        Parameter, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        help_text="Specific parameter this result is for"
+    )
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.CharField(

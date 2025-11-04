@@ -2,26 +2,97 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.utils.decorators import method_decorator
 import requests
 import json
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Max
 
-from inspection_management.models import Evince, ExternalDepartment, ExternalDepartmentAssignment
+from inspection_management.models import Evince, ExternalDepartment, ExternalDepartmentAssignment, DataGroup
 from api.serializers.external_departments import (
     ExternalDepartmentSerializer,
     ExternalDepartmentAssignmentSerializer
 )
 from utils.sql_server_connection import SQLServerConnection
+from api.mixins import DataGroupFilterMixin
+from users.authorization import role_required
+from users.models.audit_history import AuditHistory
 
 
-class ExternalDepartmentViewSet(viewsets.ModelViewSet):
+@method_decorator(role_required(allowed_roles=["Admin"]), name="dispatch")
+class ExternalDepartmentViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
     """ViewSet for managing external departments and their assignments"""
     
     queryset = ExternalDepartment.objects.all()
     serializer_class = ExternalDepartmentSerializer
     permission_classes = [IsAuthenticated]
+    data_group_field = 'group'
+    apply_to_admin = True
+    
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        
+        # Convert group name to ID
+        if 'group' in data and isinstance(data['group'], str):
+            try:
+                group = DataGroup.objects.get(name__iexact=data['group'])
+                data['group'] = group.id
+            except DataGroup.DoesNotExist:
+                return Response(
+                    {"group": [f"Data group '{data['group']}' not found"]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        department = serializer.save(created_by=request.user)
+
+        AuditHistory.objects.create(
+            user=request.user, 
+            action=f"Created department: {department.name}"
+        )
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        data = request.data.copy()
+        
+        # Convert group name to ID if provided
+        if 'group' in data and isinstance(data['group'], str):
+            try:
+                group = DataGroup.objects.get(name__iexact=data['group'])
+                data['group'] = group.id
+            except DataGroup.DoesNotExist:
+                return Response(
+                    {"group": [f"Data group '{data['group']}' not found"]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        department = serializer.save()
+
+        AuditHistory.objects.create(
+            user=request.user,
+            action=f"Updated department: {department.name}"
+        )
+
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        name = instance.name
+
+        AuditHistory.objects.create(
+            user=request.user, 
+            action=f"Deleted department: {name}"
+        )
+
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
     @action(detail=False, methods=['get'], url_path='fetch-from-lw8')
     def fetch_from_lw8(self, request):
@@ -73,11 +144,17 @@ class ExternalDepartmentViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='available-for-assignment')
     def available_for_assignment(self, request):
-        """Get departments available for new assignments"""
+        """Get departments available for new assignments (filtered by user's data groups)"""
+        # Use get_queryset() to apply data group filtering automatically
         queryset = self.get_queryset().filter(
             status='ACTIVE',
             is_available=True
         )
+        
+        # Filter by assignment type if specified
+        assignment_type = request.query_params.get('assignment_type')
+        if assignment_type:
+            queryset = queryset.filter(assignment_type=assignment_type)
         
         # Filter by department type if specified
         dept_type = request.query_params.get('department_type')

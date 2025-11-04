@@ -1,7 +1,7 @@
 from django.db import models
 
 from inspection_management.models import (BusinessUnit, InspectionAnalysis,
-                                          InspectionPoint)
+                                          InspectionPoint, Parameter)
 from users.models.user import User
 
 
@@ -25,6 +25,11 @@ class Planner(models.Model):
         on_delete=models.CASCADE,
     )
     evince_inspection_analyses = models.ManyToManyField(InspectionAnalysis)
+    evince_parameters = models.ManyToManyField(
+        Parameter, 
+        blank=True,
+        help_text="Specific parameters to include when creating inspections"
+    )
 
     changed_on = models.DateTimeField(auto_now=True)
     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -34,6 +39,14 @@ class Planner(models.Model):
         related_name="assigned_planner_reviewer",
         null=True,
         blank=True,
+    )
+    evince_assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="assigned_planner_inspector",
+        null=True,
+        blank=True,
+        help_text="User assigned to perform the inspection when created by planner"
     )
     day_of_week = models.CharField(max_length=255, blank=True, null=True)
     start_date_time = models.DateTimeField()

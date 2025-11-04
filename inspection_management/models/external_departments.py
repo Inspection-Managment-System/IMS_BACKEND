@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from users.models import User
+from .datagroup import DataGroup
 
 
 class ExternalDepartment(models.Model):
@@ -22,9 +23,16 @@ class ExternalDepartment(models.Model):
         ('MAINTENANCE', 'Under Maintenance'),
     ]
     
+    ASSIGNMENT_TYPES = [
+        ('EXTERNAL', 'External System'),
+        ('INTERNAL', 'Internal Department'),
+    ]
+    
     name = models.CharField(max_length=200, help_text="Department name")
     department_type = models.CharField(max_length=50, choices=DEPARTMENT_TYPES, help_text="Type of external system")
     description = models.TextField(blank=True, null=True, help_text="Department description")
+    assignment_type = models.CharField(max_length=20, choices=ASSIGNMENT_TYPES, default='EXTERNAL', help_text="External system or internal department")
+    group = models.ForeignKey(DataGroup, on_delete=models.CASCADE, blank=True, null=True, help_text="Data group for organization segregation")
     
     # External system connection details
     external_system_url = models.URLField(blank=True, null=True, help_text="External system API endpoint")

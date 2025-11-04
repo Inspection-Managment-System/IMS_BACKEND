@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from api.serializers import PlannerSerializer
 from inspection_management.models import (BusinessUnit, InspectionAnalysis,
-                                          InspectionPoint, Planner)
+                                          InspectionPoint, Planner, Parameter)
 from users.authorization import role_required
 from users.models.audit_history import AuditHistory
 
@@ -90,5 +90,32 @@ class PlannerViewSet(viewsets.ModelViewSet):
                 data["evince_inspection_analyses"][index] = (
                     InspectionAnalysis.objects.get(name=inspection_analysis_name).id
                 )
+        
+        # Handle parameters - convert parameter objects to IDs
+        if "parameters" in data and data["parameters"]:
+            parameter_ids = []
+            for param in data["parameters"]:
+                if isinstance(param, dict):
+                    # If it's a dict with 'id', use the ID
+                    if 'id' in param:
+                        parameter_ids.append(param['id'])
+                    # If it has 'name', look up by name
+                    elif 'name' in param:
+                        try:
+                            parameter = Parameter.objects.get(name=param['name'])
+                            parameter_ids.append(parameter.id)
+                        except Parameter.DoesNotExist:
+                            pass
+                elif isinstance(param, int):
+                    # If it's already an ID
+                    parameter_ids.append(param)
+            data["evince_parameters"] = parameter_ids
+        
+        # Handle user fields - frontend sends IDs in the 'value' property
+        if "assigned_to" in data:
+            data["assigned_to_id"] = data.pop("assigned_to")
+        
+        if "reviewed_by" in data:
+            data["reviewed_by_id"] = data.pop("reviewed_by")
 
         return data

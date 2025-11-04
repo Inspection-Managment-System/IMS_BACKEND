@@ -8,10 +8,12 @@ class ExternalDepartmentSerializer(serializers.ModelSerializer):
     
     # Related field serializers
     created_by = serializers.StringRelatedField(read_only=True)
+    group_name = serializers.CharField(source='group.name', read_only=True)
     
     # Computed fields
     department_type_display = serializers.CharField(source='get_department_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    assignment_type_display = serializers.CharField(source='get_assignment_type_display', read_only=True)
     current_assignments_count = serializers.ReadOnlyField()
     is_available_for_assignment = serializers.ReadOnlyField()
     
@@ -19,14 +21,15 @@ class ExternalDepartmentSerializer(serializers.ModelSerializer):
         model = ExternalDepartment
         fields = [
             'id', 'name', 'department_type', 'department_type_display',
-            'description', 'external_system_url', 'external_system_id',
+            'assignment_type', 'assignment_type_display', 'description', 
+            'external_system_url', 'external_system_id',
             'contact_person', 'contact_email', 'contact_phone',
             'capabilities', 'specializations', 'status', 'status_display',
             'is_available', 'max_concurrent_assignments',
             'current_assignments_count', 'is_available_for_assignment',
-            'created_at', 'updated_at', 'created_by'
+            'group', 'group_name', 'created_at', 'updated_at', 'created_by'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'current_assignments_count', 'is_available_for_assignment']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'current_assignments_count', 'is_available_for_assignment', 'created_by', 'group_name', 'assignment_type_display']
 
 
 class ExternalDepartmentAssignmentSerializer(serializers.ModelSerializer):
@@ -58,10 +61,10 @@ class ExternalDepartmentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExternalDepartment
         fields = [
-            'name', 'department_type', 'description', 'external_system_url',
-            'external_system_id', 'contact_person', 'contact_email',
-            'contact_phone', 'capabilities', 'specializations', 'status',
-            'is_available', 'max_concurrent_assignments'
+            'name', 'department_type', 'assignment_type', 'description', 
+            'external_system_url', 'external_system_id', 'contact_person', 
+            'contact_email', 'contact_phone', 'capabilities', 'specializations', 
+            'status', 'is_available', 'max_concurrent_assignments', 'group'
         ]
     
     def create(self, validated_data):
@@ -75,7 +78,8 @@ class ExternalDepartmentUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExternalDepartment
         fields = [
-            'name', 'description', 'external_system_url', 'contact_person',
-            'contact_email', 'contact_phone', 'capabilities', 'specializations',
-            'status', 'is_available', 'max_concurrent_assignments'
+            'name', 'department_type', 'assignment_type', 'description', 
+            'external_system_url', 'contact_person', 'contact_email', 
+            'contact_phone', 'capabilities', 'specializations',
+            'status', 'is_available', 'max_concurrent_assignments', 'group'
         ]

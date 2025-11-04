@@ -6,6 +6,8 @@ from inspection_management.models import InspectionResult
 class SimplifiedInspectionResultSerializer(serializers.ModelSerializer):
     inspection_analysis = serializers.SerializerMethodField()
     parameter_name = serializers.SerializerMethodField()
+    parameter_description = serializers.SerializerMethodField()
+    parameter_unit = serializers.SerializerMethodField()
     min_value = serializers.SerializerMethodField()
     max_value = serializers.SerializerMethodField()
     avg_value = serializers.SerializerMethodField()
@@ -19,6 +21,8 @@ class SimplifiedInspectionResultSerializer(serializers.ModelSerializer):
         fields = [
             "inspection_analysis",
             "parameter_name",
+            "parameter_description",
+            "parameter_unit",
             "status",
             "min_value",
             "max_value",
@@ -40,35 +44,74 @@ class SimplifiedInspectionResultSerializer(serializers.ModelSerializer):
         return obj.inspection_test.inspection_analysis.name
 
     def get_parameter_name(self, obj):
+        # If parameter is explicitly set, use it
+        if obj.parameter:
+            return obj.parameter.name
+        # Otherwise fall back to old behavior
         if obj.inspection_test.inspection_analysis.parameter_set.first():
             return obj.inspection_test.inspection_analysis.parameter_set.first().name
         return obj.inspection_test.inspection_analysis.name
+    
+    def get_parameter_description(self, obj):
+        if obj.parameter:
+            return obj.parameter.description
+        if obj.inspection_test.inspection_analysis.parameter_set.first():
+            return obj.inspection_test.inspection_analysis.parameter_set.first().description
+        return ""
+    
+    def get_parameter_unit(self, obj):
+        if obj.parameter and obj.parameter.unit:
+            return obj.parameter.unit.name
+        if obj.inspection_test.inspection_analysis.parameter_set.first():
+            param = obj.inspection_test.inspection_analysis.parameter_set.first()
+            return param.unit.name if param.unit else ""
+        return ""
 
     def get_min_value(self, obj):
+        # If parameter is explicitly set, use it
+        if obj.parameter:
+            return obj.parameter.min_value
+        # Otherwise fall back to old behavior
         if obj.inspection_test.inspection_analysis.parameter_set.first():
             return (
                 obj.inspection_test.inspection_analysis.parameter_set.first().min_value
             )
 
     def get_max_value(self, obj):
+        # If parameter is explicitly set, use it
+        if obj.parameter:
+            return obj.parameter.max_value
+        # Otherwise fall back to old behavior
         if obj.inspection_test.inspection_analysis.parameter_set.first():
             return (
                 obj.inspection_test.inspection_analysis.parameter_set.first().max_value
             )
 
     def get_avg_value(self, obj):
+        # If parameter is explicitly set, use it
+        if obj.parameter:
+            return obj.parameter.avg_value
+        # Otherwise fall back to old behavior
         if obj.inspection_test.inspection_analysis.parameter_set.first():
             return (
                 obj.inspection_test.inspection_analysis.parameter_set.first().avg_value
             )
 
     def get_string_value(self, obj):
+        # If parameter is explicitly set, use it
+        if obj.parameter:
+            return obj.parameter.string_value
+        # Otherwise fall back to old behavior
         if obj.inspection_test.inspection_analysis.parameter_set.first():
             return (
                 obj.inspection_test.inspection_analysis.parameter_set.first().string_value
             )
 
     def get_checklist_data_type(self, obj):
+        # If parameter is explicitly set, use it
+        if obj.parameter:
+            return obj.parameter.checklist_data_type
+        # Otherwise fall back to old behavior
         if obj.inspection_test.inspection_analysis.parameter_set.first():
             return (
                 obj.inspection_test.inspection_analysis.parameter_set.first().checklist_data_type
