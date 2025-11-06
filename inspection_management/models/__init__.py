@@ -15,6 +15,7 @@ from .evince import Evince, HSERiskAssessmentResult
 from .inspection_test import InspectionTest
 from .inspection_result import InspectionResult
 from .planner import Planner
+from .hse_planner import HSEPlanner
 from .equipment_type import EquipmentType
 from .datalist import DataList
 from .ticket import Ticket
