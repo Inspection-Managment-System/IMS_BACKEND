@@ -6,7 +6,7 @@ from .datagroup import DataGroup
 class RiskLevel(models.Model):
     """Configurable Risk Levels for HSE Risk Assessments"""
     name = models.CharField(max_length=100)  # Display name: "Low", "Medium", etc.
-    value = models.CharField(max_length=50, unique=True)  # Backend value: "low", "medium"
+    value = models.CharField(max_length=50)  # Backend value: "low", "medium"
     description = models.TextField(blank=True, null=True)
     order = models.IntegerField(default=0)  # For sorting in dropdowns
     group = models.ForeignKey(DataGroup, on_delete=models.CASCADE)

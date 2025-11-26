@@ -1,4 +1,5 @@
 from django.utils.decorators import method_decorator
+from django.db.models import Max
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
@@ -19,7 +20,24 @@ class RiskCategoryViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        
+
+        group_id = data.get("group")
+        if not data.get("order"):
+            try:
+                group_pk = int(group_id)
+            except (TypeError, ValueError):
+                group_pk = None
+
+            if group_pk:
+                max_order = (
+                    RiskCategory.objects.filter(group_id=group_pk)
+                    .aggregate(max_order=Max("order"))
+                    .get("max_order")
+                )
+                data["order"] = (max_order + 1) if max_order is not None else 1
+            else:
+                data["order"] = 1
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         risk_category = serializer.save(changed_by=request.user)
