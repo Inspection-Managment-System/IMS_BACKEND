@@ -1,5 +1,6 @@
 from django.utils.decorators import method_decorator
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.serializers import UnitSerializer
@@ -70,3 +71,12 @@ class UnitViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
             group_name = data.get("group")
             data["group"] = DataGroup.objects.get(name=group_name).id
         return data
+
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request, *args, **kwargs):
+        """
+        Export all units (filtered by data groups) as JSON.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

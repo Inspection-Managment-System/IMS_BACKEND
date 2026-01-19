@@ -175,3 +175,19 @@ class InspectionPointViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
             return Response({"detail": "is_enabled is required."}, status=status.HTTP_400_BAD_REQUEST)
         LocationRestrictionSetting.set_flag(bool(is_enabled))
         return Response({"is_enabled": LocationRestrictionSetting.get_flag()})
+
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request, *args, **kwargs):
+        """
+        Export all inspection points (filtered by data groups / optional business_unit) as JSON.
+        """
+        # Reuse existing list filtering, including business_unit filter and data groups
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Apply the same business_unit filter logic used in list()
+        business_unit_name = request.query_params.get("business_unit", None)
+        if business_unit_name:
+            queryset = get_related_inspection_points_from_business_unit(business_unit_name)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,6 +1,7 @@
 from django.db.models import Count
 from django.utils.decorators import method_decorator
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.serializers import InspectionAnalysisSerializer
@@ -130,3 +131,18 @@ class InspectionAnalysisViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
             location_name = data.get("location")
             data["location"] = Location.objects.get(name=location_name).id
         return data
+
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request, *args, **kwargs):
+        """
+        Export all inspection analyses (filtered by data groups / optional analysis_type) as JSON.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Apply the same analysis_type filter logic used in list()
+        analysis_type_name = request.query_params.get("analysis_type", None)
+        if analysis_type_name:
+            queryset = get_related_inspection_analyses_from_analysis_type(analysis_type_name)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

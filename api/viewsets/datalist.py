@@ -1,5 +1,6 @@
 from django.utils.decorators import method_decorator
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.serializers import DataListSerializer
@@ -103,3 +104,13 @@ class DataListViewSet(viewsets.ModelViewSet):
             if "data" in item and item["data"]:
                 item["data"] = item["data"].split(",")
         return data
+
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request, *args, **kwargs):
+        """
+        Export all data lists as JSON.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        response_data = self._convert_data_field(serializer.data)
+        return Response(response_data, status=status.HTTP_200_OK)

@@ -1,5 +1,6 @@
 from django.utils.decorators import method_decorator
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.serializers import ParameterSerializer
@@ -111,3 +112,22 @@ class ParameterViewSet(DataGroupFilterMixin, viewsets.ModelViewSet):
             data["unit"] = Unit.objects.get(name=unit_name).id
 
         return data
+
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request, *args, **kwargs):
+        """
+        Export all parameters (filtered by data groups / optional inspection_analysis) as JSON.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Apply the same inspection_analysis filter logic used in list()
+        inspection_analysis_name = request.query_params.get("inspection_analysis", None)
+        if inspection_analysis_name:
+            try:
+                inspection_analysis = InspectionAnalysis.objects.get(name=inspection_analysis_name)
+                queryset = queryset.filter(inspection_analysis=inspection_analysis)
+            except InspectionAnalysis.DoesNotExist:
+                queryset = Parameter.objects.none()
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
