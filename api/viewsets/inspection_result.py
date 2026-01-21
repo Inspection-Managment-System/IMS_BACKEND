@@ -51,14 +51,27 @@ class InspectionResultViewSet(viewsets.ModelViewSet):
         inspection_result.is_out_of_spec = False
         if entered_value and inspection_result.inspection_test.inspection_analysis.parameter_set.exists():
             parameter = inspection_result.inspection_test.inspection_analysis.parameter_set.first()
+            
+            # Check numeric parameters (with min/max values)
             if parameter.min_value is not None and parameter.max_value is not None:
                 try:
                     numeric_value = float(entered_value)
                     if numeric_value < parameter.min_value or numeric_value > parameter.max_value:
                         inspection_result.is_out_of_spec = True
                 except (ValueError, TypeError):
-                    # If it's not a numeric value, it's not out of spec
+                    # If it's not a numeric value, skip numeric check
                     pass
+            
+            # Check boolean/string parameters (with checklist_data_type and string_value)
+            elif parameter.checklist_data_type and parameter.string_value:
+                entered_lower = str(entered_value).strip().upper()
+                expected_lower = str(parameter.string_value).strip().upper()
+                
+                # For YES/NO, TRUE/FALSE, Satisfactory/Unsatisfactory parameters
+                # If entered value doesn't match expected value, it's out of spec
+                if entered_lower != expected_lower:
+                    inspection_result.is_out_of_spec = True
+                    print(f"Out-of-spec detected for {parameter.name}: entered '{entered_value}' != expected '{parameter.string_value}'")
 
         if attachment and attachment_name:
             inspection_result.attachment_name = attachment_name

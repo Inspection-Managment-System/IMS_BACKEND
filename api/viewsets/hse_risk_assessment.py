@@ -447,18 +447,18 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
             print(f"Assigning to department: {department.name}")
             
             # For internal departments, we need to handle the BusinessUnit foreign key
-            if department.name.startswith('Internal'):
+            if department.assignment_type == 'INTERNAL':
                 # For internal departments, we'll use the assigned_department field instead
                 # and set hse_mitigation_department to None or a default BusinessUnit
                 evince.assigned_department = department.name
                 evince.hse_mitigation_department = None  # Don't set the BusinessUnit foreign key
-                print(f"Internal department assignment: {department.name}")
+                print(f"Internal department assignment: {department.name} (assignment_type: {department.assignment_type})")
                 print(f"Set evince.assigned_department to: {evince.assigned_department}")
             else:
                 # For external departments, use the existing logic
                 evince.assigned_department = department.name
                 evince.hse_mitigation_department = None  # External departments don't map to BusinessUnits
-                print(f"External department assignment: {department.name}")
+                print(f"External department assignment: {department.name} (assignment_type: {department.assignment_type})")
                 print(f"Set evince.assigned_department to: {evince.assigned_department}")
                 
         except ExternalDepartment.DoesNotExist:
@@ -1029,11 +1029,11 @@ class HSERiskAssessmentViewSet(EvinceViewSet):
                     
                     # For internal departments, return all mitigation users
                     # For external departments, return empty list (no internal users)
-                    if department.name.startswith('Internal'):
-                        print(f"Internal department detected, returning all mitigation users")
+                    if department.assignment_type == 'INTERNAL':
+                        print(f"Internal department detected (assignment_type: {department.assignment_type}), returning all mitigation users")
                         # Keep all mitigation users for internal departments
                     else:
-                        print(f"External department detected, returning empty list")
+                        print(f"External department detected (assignment_type: {department.assignment_type}), returning empty list")
                         # Return empty list for external departments
                         mitigation_users = mitigation_users.none()
                         
